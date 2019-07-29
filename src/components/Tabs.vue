@@ -1,7 +1,7 @@
 <template>
-    <div class="tabs">
-        <v-card>
-            <v-tabs>
+    <div app class="tabs">
+        <v-card v-if="tabs.length > 0">
+            <v-tabs show-arrows>
                 <v-tab to="/">Home</v-tab>
                 <v-tab v-for="tab in tabs" :key="tab.name" :to="{path: '/person/' + tab.posid}">{{tab.name}}
                     <v-btn x-small icon text @click.prevent="closeTab(tab.posid)">
@@ -10,10 +10,7 @@
                 </v-tab>
             </v-tabs>
         </v-card>
-
     </div>
-
-
 </template>
 
 <script>
@@ -26,9 +23,6 @@
         },
         methods: {
             closeTab(object) {
-                // setTimeout(() => {
-                //     this.$router.push('/')
-                // }, 1)
                 this.$router.push('/')
                 this.$store.dispatch('removeSelected', object)
             }

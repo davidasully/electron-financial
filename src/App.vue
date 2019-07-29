@@ -8,8 +8,21 @@
                         color="amber"
                 >
                     <v-icon @click="drawer = !drawer">menu</v-icon>
-                    <span class="title ml-3 mr-5">Business Solutions
+                    <span @click="navigateHome"
+                          style="cursor: pointer"
+                          class="title ml-3 mr-5"
+                    >Business Solutions
                 <span class="font-weight-light">Forecast</span></span>
+                    <v-spacer></v-spacer>
+                    <v-btn  icon x-large class="mr-5=2">
+                        <v-icon>add_circle_outline</v-icon>
+                    </v-btn>
+                    <v-btn icon x-large class="mr-1">
+                        <v-icon>create</v-icon>
+                    </v-btn>
+                    <v-btn icon x-large class="mr-5">
+                        <v-icon>delete_outline</v-icon>
+                    </v-btn>
                     <v-text-field
                             solo-inverted
                             flat
@@ -19,7 +32,7 @@
                             v-model="search"
                             @keyup="updateSearch()"
                     ></v-text-field>
-                    <v-spacer></v-spacer>
+
                 </v-app-bar>
 
                 <v-navigation-drawer
@@ -85,7 +98,7 @@
 
                 </v-content>
                 <v-footer app>
-                    <span class="font-weight-light"> ASU College of Health Solutions</span>
+                    <img src="@/assets/logo.png" height="60px">
                 </v-footer>
             </div>
         </template>
@@ -125,6 +138,9 @@
         methods: {
             updateSearch() {
                 this.$store.state.search = this.search
+            },
+            navigateHome() {
+                this.$router.push('/')
             }
         },
         created() {

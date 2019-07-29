@@ -1,6 +1,13 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import {commitAllResults} from "./sqlUtils";
+
+const knex = require('knex')({
+    client: 'sqlite3',
+    connection: {
+        filename: "./my-db.sqlite"
+    },
+    useNullAsDefault: true
+});
 
 Vue.use(Vuex)
 
@@ -30,10 +37,13 @@ export const store = new Vuex.Store({
         }
     },
     actions: {
-        loadBPC({state}) {
+        loadBPC({commit, state}) {
             let table = state.set.db.nms.bpc;
-            let sql = `SELECT * FROM ${table}`;
-            commitAllResults(sql, 'loadBPC')
+            knex.select().table(table)
+                .asCallback((err, rows) => {
+                    if (err) return console.error(err);
+                    commit('loadBPC', rows)
+                });
         },
         addSelected({commit, state}, payload) {
             let selected = state.selected
@@ -49,7 +59,7 @@ export const store = new Vuex.Store({
     },
     getters: {
         tabs(state) {
-            return  state.selected.map(tab => {
+            return state.selected.map(tab => {
                 return {
                     name: `${tab.name} (${tab.posid.slice(-6)})`,
                     posid: tab.posid

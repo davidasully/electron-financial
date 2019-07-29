@@ -4,7 +4,7 @@
         <v-container
                 fluid
                 fill-height
-
+                class="my-5"
         >
             <v-layout
                     justify-center
@@ -21,9 +21,16 @@
                             show-select
                             class="elevation-1"
                     >
-
+                        <template v-slot:item.empl_class="{ item }">
+                            <v-layout justify-center>
+                                {{item.empl_class}}
+                            </v-layout>
+                        </template>
+                        <template v-slot:item.fte="{ item }">
+                            <span>{{item.fte ? item.fte.toFixed(2) : ''}}</span>
+                        </template>
                         <template v-slot:item.annual_rt="{ item }">
-                            <span>{{item.annual_rt.toLocaleString()}}</span>
+                            <span>{{item.annual_rt ? Math.round(item.annual_rt).toLocaleString() : ''}}</span>
                         </template>
 
                         <template v-slot:item.posid="{ item }">
@@ -41,20 +48,22 @@
 <script>
     import {DataFrame} from 'data-forge';
 
-    const titleCase = (str) => {
-        return str.replace(/_/g, " ").toLowerCase().split(' ').map(function (word) {
-            return word.replace(word[0], word[0].toUpperCase());
-        }).join(' ');
-    }
-
     export default {
         data() {
             return {
                 columns: [
                     'posid', 'name', 'jobcode_descr', 'deptid',
-                    'ben_elig_flg', 'empl_class', 'annual_rt',
-                ]
+                    'empl_class', 'fte', 'annual_rt',
+                ],
+                componentKey: 0
             }
+        },
+        mounted() {
+            setTimeout(() => {
+                if (!this.showTable) {
+                    this.$forceUpdate()
+                }
+            }, 1)
         },
         computed: {
             bpc() {
@@ -63,7 +72,8 @@
             bpcData() {
                 return new DataFrame(this.bpc)
                     .generateSeries({
-                        posid: r => r.emplid + '-' + r.position_nbr
+                        posid: r => r.emplid + '-' + r.position_nbr,
+                        name: r => r.name ? r.name : r.position_budget_type
                     })
                     .subset(this.columns)
                     .distinct(r => r.posid)
@@ -72,8 +82,9 @@
             bpcHeaders() {
                 return this.columns.map(name => {
                     return {
-                        text: titleCase(name),
-                        value: name
+                        text: name.replace(/_/g, " ").toUpperCase(),
+                        value: name,
+                        sortable: name != 'fte' & name != 'annual_rt'
                     }
                 })
             },
@@ -90,7 +101,7 @@
                 let look_in_state = curr_state.filter(item => {
                     return item.posid === object.posid
                 })
-                if (curr_state.length < 4 & look_in_state.length === 0 ) {
+                if (look_in_state.length === 0) {
                     this.$store.dispatch('addSelected', object)
                     // this.$router.push('/person/' + object.posid)
                 }
