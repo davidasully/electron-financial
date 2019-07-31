@@ -17,9 +17,9 @@
                     <v-btn  icon x-large class="mr-5=2">
                         <v-icon>add_circle_outline</v-icon>
                     </v-btn>
-                    <v-btn icon x-large class="mr-1">
-                        <v-icon>create</v-icon>
-                    </v-btn>
+<!--                    <v-btn icon x-large class="mr-1">-->
+<!--                        <v-icon>create</v-icon>-->
+<!--                    </v-btn>-->
                     <v-btn icon x-large class="mr-5">
                         <v-icon>delete_outline</v-icon>
                     </v-btn>
@@ -94,7 +94,9 @@
 
                     <Tabs></Tabs>
 
-                    <router-view></router-view>
+                    <keep-alive include="home">
+                        <router-view></router-view>
+                    </keep-alive>
 
                 </v-content>
                 <v-footer app>

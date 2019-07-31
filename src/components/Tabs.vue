@@ -1,6 +1,7 @@
 <template>
     <div app class="tabs">
-        <v-card v-if="tabs.length > 0">
+        <v-expand-transition>
+                    <v-card v-show="tabs.length > 0">
             <v-tabs show-arrows>
                 <v-tab to="/">Home</v-tab>
                 <v-tab v-for="tab in tabs" :key="tab.name" :to="{path: '/person/' + tab.posid}">{{tab.name}}
@@ -10,6 +11,7 @@
                 </v-tab>
             </v-tabs>
         </v-card>
+        </v-expand-transition>
     </div>
 </template>
 

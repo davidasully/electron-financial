@@ -49,6 +49,7 @@
     import {DataFrame} from 'data-forge';
 
     export default {
+        name: 'home',
         data() {
             return {
                 columns: [
