@@ -28,12 +28,14 @@
                 <span>{{ `$${s.annual_rt.toLocaleString()} /year at ${s.fte.toFixed(2)} FTE`}}</span>
             </v-flex>
             <v-expand-transition>
-                <v-flex class="mb-n1" v-show="showMore">
-                    <span>{{s.dept_descr}}</span>
-                </v-flex>
-                <v-flex v-show="showMore">
-                    <span>{{s.ben_elig_flg === 'Y' ? 'Benefit Eligible' : 'Not Benefit Eligible'}}</span>
-                </v-flex>
+                <div v-show="showMore">
+                    <v-flex class="mb-n1">
+                        <span>{{s.dept_descr}}</span>
+                    </v-flex>
+                    <v-flex>
+                        <span>{{s.ben_elig_flg === 'Y' ? 'Benefit Eligible' : 'Not Benefit Eligible'}}</span>
+                    </v-flex>
+                </div>
             </v-expand-transition>
         </v-layout>
 
@@ -193,7 +195,7 @@
                                 </v-layout>
                             </div>
                         </v-expand-transition>
-
+                        <v-divider v-if="showMore"></v-divider>
                         <v-layout align-end justify-end row fill-height class="pt-2 mb-n4">
                             <!--                            <v-flex xs6 md3>-->
                             <!--                                <div class="text-center">-->
