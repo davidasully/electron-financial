@@ -12,9 +12,9 @@
             >
                 <v-flex shrink>
                     <v-data-table
-                            v-if="showTable"
+                            v-if="this.bpc.length > 0"
                             :headers="bpcHeaders"
-                            :items="bpcData"
+                            :items="bpc"
                             :items-per-page="10"
                             :search="search"
                             item-key="posid"
@@ -36,12 +36,10 @@
                         <template v-slot:item.posid="{ item }">
                             <span @click="openTab(item)" style="cursor: pointer">{{item.posid}}</span>
                         </template>
-
                     </v-data-table>
                 </v-flex>
             </v-layout>
         </v-container>
-
     </div>
 </template>
 
@@ -55,29 +53,21 @@
                 columns: [
                     'posid', 'name', 'jobcode_descr', 'deptid',
                     'empl_class', 'fte', 'annual_rt',
-                ],
-                componentKey: 0
+                ]
             }
         },
         mounted() {
             setTimeout(() => {
-                if (!this.showTable) {
+                if (this.bpc.length === 0) {
                     this.$forceUpdate()
                 }
             }, 1)
         },
         computed: {
             bpc() {
-                return this.$store.state.data.bpc
-            },
-            bpcData() {
-                return new DataFrame(this.bpc)
-                    .generateSeries({
-                        posid: r => r.emplid + '-' + r.position_nbr,
-                        name: r => r.name ? r.name : r.position_budget_type
-                    })
-                    .subset(this.columns)
+                return new DataFrame(this.$store.getters.combinedBPC)
                     .distinct(r => r.posid)
+                    .subset(this.columns)
                     .toArray()
             },
             bpcHeaders() {
@@ -88,9 +78,6 @@
                         sortable: name != 'fte' & name != 'annual_rt'
                     }
                 })
-            },
-            showTable() {
-                return this.bpc.length > 0
             },
             search() {
                 return this.$store.state.search
@@ -104,7 +91,6 @@
                 })
                 if (look_in_state.length === 0) {
                     this.$store.dispatch('addSelected', object)
-                    // this.$router.push('/person/' + object.posid)
                 }
             }
         }

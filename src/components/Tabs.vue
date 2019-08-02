@@ -4,7 +4,7 @@
                     <v-card v-show="tabs.length > 0">
             <v-tabs show-arrows>
                 <v-tab to="/">Home</v-tab>
-                <v-tab v-for="tab in tabs" :key="tab.name" :to="{path: '/person/' + tab.posid}">{{tab.name}}
+                <v-tab v-for="tab in tabs" :key="tab.posid" :to="{path: '/person/' + tab.posid}">{{tab.name}}
                     <v-btn x-small icon text @click.prevent="closeTab(tab.posid)">
                         <v-icon small>close</v-icon>
                     </v-btn>
