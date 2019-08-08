@@ -6,18 +6,15 @@
                     <v-flex>
                         <v-tooltip bottom>
                             <template v-slot:activator="{ on }">
-                                <h1 v-on="on">{{ `${s.name}${genericName ? ' ' + s.emplid + ' ' : '' }
-                                    (${s.empl_class})`
-                                    }}</h1>
+                                <h1 v-on="on">{{ pageTitle }}</h1>
                             </template>
                             <span>{{'EMPLID: ' + s.emplid}}</span>
                         </v-tooltip>
                     </v-flex>
                     <v-flex v-if="userCreated">
                         <template>
-
                             <v-layout justify-center>
-                                <v-dialog v-model="dialog" persistent max-width="290">
+                                <v-dialog v-model="confirmDeletePersonDialog" persistent max-width="290">
                                     <template v-slot:activator="{ on }">
                                         <v-btn
                                                 x-small
@@ -27,24 +24,24 @@
                                         >
                                             <v-icon small>delete</v-icon>
                                         </v-btn>
-
                                     </template>
                                     <v-card>
                                         <v-card-title class="headline">Are you sure?</v-card-title>
                                         <v-card-text>
-                                            {{`This action will permanently delete ${s.name} (ID: ${s.emplid}) and associated account distributions.`}}
+                                            {{`This action will permanently delete ${s.name} (ID: ${s.emplid}) and
+                                            associated account distributions.`}}
                                         </v-card-text>
                                         <v-card-actions>
                                             <v-spacer></v-spacer>
-                                            <v-btn color="error" text @click="dialog = false">cancel</v-btn>
+                                            <v-btn color="error" text @click="confirmDeletePersonDialog = false">
+                                                cancel
+                                            </v-btn>
                                             <v-btn color="primary" text @click="deletePerson(s.emplid)">delete</v-btn>
                                         </v-card-actions>
                                     </v-card>
                                 </v-dialog>
                             </v-layout>
                         </template>
-
-
                     </v-flex>
                 </v-layout>
             </v-flex>
@@ -64,15 +61,265 @@
                 </h3>
             </v-flex>
             <v-flex class="mb-n1">
-                <span>{{(s.forecast_amt ? `Forecast $${s.forecast_amt.toLocaleString()}` : `$${s.annual_rt.toLocaleString()} /year`) + ` at ${s.fte.toFixed(2)} FTE`}}</span>
+                <span>{{ pageSalary }}</span>
             </v-flex>
             <v-expand-transition>
-                <div v-show="showMore">
+                <div v-show="showMore | noAccounting">
                     <v-flex class="mb-n1">
                         <span>{{s.dept_descr}}</span>
                     </v-flex>
                     <v-flex>
                         <span>{{s.ben_elig_flg === 'Y' ? 'Benefit Eligible' : 'Not Benefit Eligible'}}</span>
+                    </v-flex>
+                    <v-flex class="mt-2">
+
+                        <!--Begin account mapping form-->
+                        <v-btn @click.stop="openAccountDialog" color="primary">{{(noAccounting ? 'Create ' : 'Modify ')
+                            + 'Accounting'}}
+                        </v-btn>
+
+                        <v-dialog v-model="forecastDialog" persistent max-width="600px">
+                            <template v-slot:activator="{ on }">
+                                <v-btn v-on="on" color="primary" class="ml-2">Forecast</v-btn>
+                            </template>
+                            <v-form ref="form">
+                                <v-card>
+                                    <v-card-title>
+                                        <span class="headline ml-4">Forecast</span>
+                                    </v-card-title>
+                                    <v-card-text>
+                                        <v-container grid-list-md>
+                                            <v-layout wrap>
+                                                <v-flex xs12 class="mb-2">
+                                                    <v-layout row wrap class="title text-center">
+                                                        <v-flex>
+                                                            <div class="caption grey--text">Original Budget</div>
+                                                            <span>{{ totalStats.totalOrigBudgeted.toLocaleString() }}</span>
+                                                        </v-flex>
+                                                        <v-flex>
+                                                            <div class="caption grey--text">Current Budget</div>
+                                                            <span>{{ totalStats.totalCurrBudgeted.toLocaleString() }}</span>
+                                                        </v-flex>
+                                                        <v-flex>
+                                                            <div class="caption grey--text">Total Committed</div>
+                                                            <span>{{ Math.round(totalStats.totalCommited).toLocaleString() }}</span>
+                                                        </v-flex>
+                                                        <v-flex xs12>
+                                                            <v-layout row class="ma-2">
+                                                                <v-flex>
+                                                                    <div class="caption grey--text">Quarter 1</div>
+                                                                    Q1
+                                                                </v-flex>
+                                                                <v-flex>
+                                                                    <div class="caption grey--text">Quarter 2</div>
+                                                                    Q2
+                                                                </v-flex>
+                                                                <v-flex>
+                                                                    <div class="caption grey--text">Quarter 3</div>
+                                                                    Q3
+                                                                </v-flex>
+                                                                <v-flex>
+                                                                    <div class="caption grey--text">Quarter 4</div>
+                                                                    Q4
+                                                                </v-flex>
+                                                                <v-flex>
+                                                                    <div class="caption grey--text">Cumulative</div>
+                                                                    Total
+                                                                </v-flex>
+                                                            </v-layout>
+                                                        </v-flex>
+                                                    </v-layout>
+                                                </v-flex>
+                                                <v-flex xs7>
+                                                    <v-select
+                                                            :items="['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4']"
+                                                            :rules="[v => !!v || 'Quarter selection required']"
+                                                            label="Quarter"
+                                                            required
+                                                            v-model="forecast.quarter"
+                                                    ></v-select>
+                                                </v-flex>
+                                                <v-flex xs5>
+                                                    <v-text-field
+                                                            label="Amount*"
+                                                            :rules="[v => !!v || 'Forecast amount required']"
+                                                            required
+                                                            v-model="forecast.amt"
+                                                    >
+                                                    </v-text-field>
+                                                </v-flex>
+                                                <v-flex xs12>
+                                                    <v-textarea
+                                                            label="Notes"
+                                                            filled
+                                                            v-model="forecast.note"
+                                                    ></v-textarea>
+                                                </v-flex>
+                                            </v-layout>
+                                        </v-container>
+                                    </v-card-text>
+                                    <v-card-actions class="mt-n6">
+                                        <v-spacer></v-spacer>
+                                        <v-btn color="error" text @click="forecastDialog = !forecastDialog">Close
+                                        </v-btn>
+                                        <v-btn color="primary" @click.stop="submitForecast()">Submit</v-btn>
+                                    </v-card-actions>
+                                </v-card>
+                            </v-form>
+                        </v-dialog>
+
+                        <v-dialog v-model="accountMappingDialog" persistent max-width="600px">
+                            <v-form ref="form">
+                                <v-card>
+                                    <v-card-title>
+                                        <v-layout>
+                                            <v-flex xs12 md8>
+                                                <span class="headline  ml-4">{{(noAccounting ? 'Create ' : 'Modify ') + 'Accounting'}}</span>
+                                            </v-flex>
+                                            <v-spacer></v-spacer>
+                                            <v-flex xs12 md4>
+                                                <v-btn @click="showAddAccount = !showAddAccount" color="primary" text>
+                                                    Add New Account
+                                                </v-btn>
+                                            </v-flex>
+                                        </v-layout>
+
+                                    </v-card-title>
+                                    <v-card-text>
+                                        <v-container grid-list-md>
+
+                                            <v-dialog
+                                                    v-model="showEdit"
+                                                    max-width="115px"
+                                                    max-height="50"
+                                                    hide-overlay
+                                            >
+                                                <v-card flat max-width="115">
+                                                    <v-container>
+                                                        <v-layout align-space-around justify-space-around row
+                                                                  fill-height class="mx-3">
+                                                            <v-flex xs12 class="mb-n3">
+                                                                <v-text-field
+                                                                        v-model="selectedEditValue"
+                                                                        autofocus
+                                                                        outlined
+                                                                        full-width
+                                                                ></v-text-field>
+                                                            </v-flex>
+                                                            <v-flex xs12>
+                                                                <v-btn
+                                                                        class="px-1"
+                                                                        color="primary"
+                                                                        @click.stop="saveSelectedEdit"
+                                                                >
+                                                                    update
+                                                                </v-btn>
+                                                            </v-flex>
+                                                        </v-layout>
+                                                    </v-container>
+                                                </v-card>
+                                            </v-dialog>
+
+
+                                            <v-dialog
+                                                    v-model="showAddAccount"
+                                                    max-width="500px"
+                                                    max-height="50"
+                                                    hide-overlay
+                                            >
+                                                <v-card flat max-width="500">
+                                                    <v-form ref="form2">
+                                                        <v-container>
+                                                            <v-layout align-space-around justify-space-around row
+                                                                      fill-height class="mx-3">
+                                                                <v-flex xs6 class="mb-n3">
+                                                                    <v-text-field
+                                                                            label="Cost Center"
+                                                                            v-model="newCostCenter"
+                                                                            autofocus
+                                                                            outlined
+                                                                            :rules="[v => !!v || 'Cost Center required']"
+                                                                            required
+                                                                    ></v-text-field>
+                                                                </v-flex>
+                                                                <v-flex xs6 class="mb-n3">
+                                                                    <v-text-field
+                                                                            label="Program/Grant"
+                                                                            v-model="newWd2Cd"
+                                                                            outlined
+                                                                            :rules="[v => !!v || 'Program/Grant required']"
+                                                                            required
+                                                                    ></v-text-field>
+                                                                </v-flex>
+                                                                <v-flex>
+                                                                    <v-layout class="mt-3">
+                                                                        <v-spacer></v-spacer>
+                                                                        <v-btn
+                                                                                class="px-1"
+                                                                                color="primary"
+                                                                                @click.stop="addAccount"
+                                                                        >
+                                                                            Add Account
+                                                                        </v-btn>
+                                                                    </v-layout>
+                                                                </v-flex>
+                                                            </v-layout>
+                                                        </v-container>
+                                                    </v-form>
+                                                </v-card>
+                                            </v-dialog>
+
+
+                                            <v-card flat v-for="(p, i) in accounts" :key="p.key" color="grey lighten-4"
+                                                    class="mb-2">
+                                                <v-layout row wrap class="pa-1">
+                                                    <v-flex xs6 md4>
+                                                        <div class="caption grey--text">Cost Center</div>
+                                                        <v-tooltip bottom>
+                                                            <template v-slot:activator="{ on }">
+                                                                <span v-on="on">{{p.cost_center_reference_id}}</span>
+                                                            </template>
+                                                            <span>{{p.cost_center_name}}</span>
+                                                        </v-tooltip>
+                                                    </v-flex>
+                                                    <v-flex xs6 md3>
+                                                        <div class="caption grey--text">Program/Grant</div>
+                                                        <v-tooltip bottom>
+                                                            <template v-slot:activator="{ on }">
+                                                                <span v-on="on">{{p.wd2_cd}}</span>
+                                                            </template>
+                                                            <span>{{p.wd2_name}}</span>
+                                                        </v-tooltip>
+                                                    </v-flex>
+                                                    <v-flex xs6 md3>
+                                                        <div class="text-center">
+                                                            <div class="caption grey--text">Dist %*</div>
+                                                            <span @click="openSelectedEdit(i, p.fct_dist_pct)">{{ p.fct_dist_pct || 0 }}</span>
+                                                        </div>
+                                                    </v-flex>
+                                                    <v-flex xs6 md2>
+                                                        <div class="caption grey--text">Forecast Dist</div>
+                                                        <span>{{((s.forecast || p.forecast) || 0) * ((p.fct_dist_pct || 0)/100) }}</span>
+                                                    </v-flex>
+                                                </v-layout>
+                                            </v-card>
+                                        </v-container>
+                                    </v-card-text>
+                                    <v-card-actions>
+                                        <span class="caption ml-4">*Click distribution percent text to edit.</span>
+                                        <v-spacer></v-spacer>
+                                        <v-btn color="error" text @click="accountMappingDialog = !accountMappingDialog">
+                                            Close
+                                        </v-btn>
+                                        <v-btn color="primary" @click.stop="submitAccountMapping">
+                                            Submit
+                                        </v-btn>
+                                    </v-card-actions>
+                                </v-card>
+                            </v-form>
+                        </v-dialog>
+                        <!--End account mapping form-->
+
                     </v-flex>
                 </div>
             </v-expand-transition>
@@ -85,7 +332,7 @@
             <v-layout row wrap class="ma-2" v-if="!noAccounting">
                 <v-flex
                         v-for="p in person"
-                        :key="p.cost_center_reference_id + p.wd2_cd"
+                        :key="p.key"
                         xs12 sm9 md6 lg4
                         class="pa-2"
                 >
@@ -128,7 +375,7 @@
                                 </v-layout>
                             </v-flex>
                         </v-layout>
-                        <v-divider></v-divider>
+                        <v-divider v-if="showMore"></v-divider>
                         <v-expand-transition>
                             <div class="mx-5 pr-2" v-show="showMore">
                                 <v-layout row wrap>
@@ -234,26 +481,11 @@
                                 </v-layout>
                             </div>
                         </v-expand-transition>
-                        <v-divider v-if="showMore"></v-divider>
-                        <v-layout align-end justify-end row fill-height class="pt-2 mb-n4">
-                            <!--                            <v-flex xs6 md3>-->
-                            <!--                                <div class="text-center">-->
-                            <!--                                    <v-btn color="error" outlined>delete</v-btn>-->
-                            <!--                                </div>-->
-                            <!--                            </v-flex>-->
-                            <v-flex xs5>
-                                <div class="text-center">
-                                    <v-btn color="primary">forecast</v-btn>
-                                </div>
-                            </v-flex>
-                        </v-layout>
+
                     </v-card>
                 </v-flex>
             </v-layout>
-            <div class="text-center ma-2" v-if="noAccounting">
-                <br>
-                <v-btn color="primary">Create New Distribution</v-btn>
-            </div>
+
         </v-container>
     </div>
 </template>
@@ -265,14 +497,105 @@
         data() {
             return {
                 showMore: false,
-                dialog: false
+                confirmDeletePersonDialog: false,
+                accountMappingDialog: false,
+                dataTableDialog: false,
+                forecastDialog: false,
+                showEdit: false,
+                showAddAccount: false,
+                selectedEdit: '',
+                selectedEditValue: '',
+                newCostCenter: '',
+                newWd2Cd: '',
+                forecast: {
+                    quarter: '',
+                    amt: 0,
+                    note: ''
+                },
+                columns: ['emplid', 'position_nbr', 'cost_center_reference_id', 'wd2_cd'],
+                accounts: []
             }
         },
         methods: {
             deletePerson(id) {
-                this.$store.dispatch('deletePerson', id)
-                this.$store.dispatch('removeSelected', this.posid)
+                this.$store.dispatch('deletePerson', id);
+                this.$store.dispatch('removeSelected', this.posid);
                 this.$router.push('/')
+            },
+            openAccountDialog() {
+                this.accounts = this.person;
+                this.accountMappingDialog = true;
+            },
+            openSelectedEdit(index, value) {
+                this.selectedEditValue = value;
+                this.selectedEdit = index;
+                this.showEdit = true
+            },
+            saveSelectedEdit() {
+                let accounts = this.accounts;
+                let editedObject = accounts[this.selectedEdit];
+                editedObject.fct_dist_pct = this.selectedEditValue;
+                accounts.splice(this.selectedEdit, 1, editedObject);
+                this.accounts = accounts;
+                this.showEdit = false
+            },
+            addAccount() {
+                let valid = this.$refs.form2.validate();
+                let curKeys = this.person.map(i => i.cost_center_reference_id + i.wd2_cd);
+                let dupe = curKeys.includes(this.newCostCenter + this.newWd2Cd);
+                if (valid && !dupe) {
+                    this.accounts.unshift({
+                        emplid: this.s.emplid,
+                        position_nbr: this.s.position_nbr,
+                        cost_center_reference_id: this.newCostCenter,
+                        wd2_cd: this.newWd2Cd,
+                        fct_dist_pct: 0
+                    });
+                    this.showAddAccount = false;
+                    this.$refs.form2.resetValidation();
+                } else {
+                    if (dupe) {
+                        this.$store.dispatch('openSnackbar', {
+                        message: 'Duplicate account',
+                        color: 'error',
+                        timeout: 2000
+                    })
+                    }
+                }
+            },
+            submitAccountMapping() {
+                if (this.totalPercent === 100) {
+                    let mapping = this.accounts.map(i => {
+                        return {
+                            uid: i.emplid,
+                            pid: i.position_nbr,
+                            cost_center_reference_id: i.cost_center_reference_id,
+                            wd2_cd: i.wd2_cd,
+                            fct_dist_pct: i.fct_dist_pct
+                        }
+                    });
+                    this.$store.dispatch('addAccountMapping', mapping);
+                    this.accountMappingDialog = false
+                } else {
+                    this.$store.dispatch('openSnackbar', {
+                        message: 'Percentages must total 100',
+                        color: 'error',
+                        timeout: 2000
+                    })
+                }
+            },
+            submitForecast() {
+                if (this.$refs.form.validate()) {
+                    let forecast = this.forecast;
+                    let adjAmt = forecast.amt - this.totalStats.totalOrigBudgeted;
+                    forecast['amt'] = adjAmt;
+                    forecast['quarter'] = 'q' + forecast.quarter.slice(-1);
+                    forecast['uid'] = this.s.emplid;
+                    forecast['pid'] = this.s.position_nbr;
+                    this.$store.dispatch('addForecast', forecast);
+                    this.$refs.form.resetValidation();
+                    this.forecastDialog = false
+                }
             }
         },
         computed: {
@@ -288,11 +611,36 @@
             s() {
                 return this.person[0]
             },
+            pageTitle() {
+                let tag = this.s.empl_class ? ` (${this.s.empl_class})` : '';
+                let name = this.genericName ? `${this.s.name} ${this.s.emplid}` : this.s.name;
+                return name + tag
+            },
+            pageSalary() {
+                let start = ''
+                if (this.s.forecast_amt) {
+                    start = `Forecast $${this.s.forecast_amt.toLocaleString()}`
+                } else {
+                    start = `$${(this.s.annual_rt || 0).toLocaleString()} /year`
+                }
+                return start + ` at ${(this.s.fte || 0).toFixed(2)} FTE`
+            },
+            totalPercent() {
+                let acct = this.accounts;
+                return acct.length > 0 ? acct.map(item => parseInt(item.fct_dist_pct)).reduce((t, v) => t + v) : 0
+            },
+            totalStats() {
+                return {
+                    totalCommited: this.person.map(item => item.total_committed_personal_services).reduce((t, v) => t + v),
+                    totalOrigBudgeted: this.person.map(item => item.original_budget_personal_services).reduce((t, v) => t + v),
+                    totalCurrBudgeted: this.person.map(item => item.current_budget_personal_services).reduce((t, v) => t + v)
+                }
+            },
             genericName() {
                 return ['No Employee', 'Employee Group'].includes(this.s.name)
             },
             userCreated() {
-                let personIds = this.$store.state.data.persons.map(item => item.id)
+                let personIds = this.$store.state.data.persons.map(item => item.id);
                 let uid = this.s.emplid;
                 return personIds.includes(uid)
             },

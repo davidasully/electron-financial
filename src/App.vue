@@ -62,21 +62,29 @@
                                                         v-model="position.pid"
                                                 ></v-text-field>
                                             </v-flex>
-                                            <v-flex xs12 sm7>
+                                            <v-flex xs12 md6>
                                                 <v-text-field
                                                         label="Name (Optional)"
                                                         v-model="position.name"
                                                 ></v-text-field>
                                             </v-flex>
-                                            <v-flex xs8 sm3>
+                                            <!--                                            <v-flex xs8 sm3>-->
+                                            <!--                                                <v-text-field-->
+                                            <!--                                                        label="Forecast Amount*"-->
+                                            <!--                                                        :rules="[v => !!v || 'Forecast amount required']"-->
+                                            <!--                                                        required-->
+                                            <!--                                                        v-model="position.amt"-->
+                                            <!--                                                ></v-text-field>-->
+                                            <!--                                            </v-flex>-->
+                                            <v-flex xs6 md3>
                                                 <v-text-field
-                                                        label="Forecast Amount*"
-                                                        :rules="[v => !!v || 'Forecast amount required']"
+                                                        label="Dept ID*"
+                                                        :rules="[v => !!v || 'Dept ID required']"
                                                         required
-                                                        v-model="position.amt"
+                                                        v-model="position.deptid"
                                                 ></v-text-field>
                                             </v-flex>
-                                            <v-flex xs4 sm2>
+                                            <v-flex xs6 md3>
                                                 <v-text-field
                                                         label="FTE*"
                                                         :rules="[v => !!v || 'FTE required']"
@@ -84,14 +92,14 @@
                                                         v-model="position.fte"
                                                 ></v-text-field>
                                             </v-flex>
-                                            <v-flex xs12>
-                                                <v-textarea
-                                                        label="Notes"
-                                                        filled
-                                                        v-model="position.note"
-                                                        :rules="[v => (!v || v.length <= 255) || 'A maximum of 255 characters is allowed.']"
-                                                ></v-textarea>
-                                            </v-flex>
+                                            <!--                                            <v-flex xs12>-->
+                                            <!--                                                <v-textarea-->
+                                            <!--                                                        label="Notes"-->
+                                            <!--                                                        filled-->
+                                            <!--                                                        v-model="position.note"-->
+                                            <!--                                                        :rules="[v => (!v || v.length <= 255) || 'A maximum of 255 characters is allowed.']"-->
+                                            <!--                                                ></v-textarea>-->
+                                            <!--                                            </v-flex>-->
                                         </v-layout>
                                     </v-container>
                                     <small>*indicates required field</small>
@@ -175,6 +183,16 @@
                 </v-navigation-drawer>
                 <v-content>
 
+                    <v-snackbar
+                            top right
+                            v-model="snackbar.active"
+                            :color="snackbar.color"
+                            :timeout="snackbar.timeout"
+                    >
+                        {{ snackbar.message }}
+                        <v-btn v-if="snackbar.btn.text" text :to="snackbar.btn.to">{{snackbar.btn.text}}</v-btn>
+                    </v-snackbar>
+
                     <Tabs></Tabs>
 
                     <keep-alive include="home">
@@ -204,9 +222,8 @@
                 uid: '',
                 name: '',
                 pid: '',
-                fte: 0,
-                amt: 0,
-                note: ''
+                deptid: '',
+                fte: 0
             },
             items: [
                 {icon: 'lightbulb_outline', text: 'Pivot Table', name: '/pivot'},
@@ -254,7 +271,7 @@
                     payload['type'] = this.default_positions.filter(dp => {
                         return dp.type_name === payload.type
                     })[0].type;
-                    payload['quarter'] = this.$store.state.set.quarter
+                    // payload['quarter'] = this.$store.state.set.quarter
                     this.$store.dispatch('addPerson', payload)
                     this.resetWindow()
                     this.$refs.form.resetValidation()
@@ -267,13 +284,18 @@
                 return this.$store.state.data.default_positions
                     .filter(item => item.group === this.positionType)
                     .sort((a, b) => (a.type_name > b.type_name) ? 1 : -1)
+            },
+            snackbar() {
+                return this.$store.state.snackbar
             }
         },
         created() {
-            this.$vuetify.theme.dark = false
-            this.$store.dispatch('loadBPC')
-            this.$store.dispatch('loadPersons')
-            this.$store.dispatch('loadDefaultPositions')
+            this.$vuetify.theme.dark = false;
+            this.$store.dispatch('loadBPC');
+            this.$store.dispatch('loadPersons');
+            this.$store.dispatch('loadForecasts');
+            this.$store.dispatch('loadMappedAccounts');
+            this.$store.dispatch('loadDefaultPositions');
         },
     }
 </script>
