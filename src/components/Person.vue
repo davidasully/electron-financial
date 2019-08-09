@@ -85,49 +85,64 @@
                             <v-form ref="form">
                                 <v-card>
                                     <v-card-title>
-                                        <span class="headline ml-4">Forecast</span>
+                                        <span class="headline ml-4">Forecast
+                                        <v-btn color="primary"
+                                               class="ml-1"
+                                               x-small
+                                               @click="showForecastDetail = !showForecastDetail"
+                                               rounded
+                                               depressed
+                                        >
+                                        <v-icon v-if="showForecastDetail">expand_less</v-icon>
+                                        <v-icon v-if="!showForecastDetail">expand_more</v-icon>
+                                    </v-btn></span>
                                     </v-card-title>
                                     <v-card-text>
                                         <v-container grid-list-md>
                                             <v-layout wrap>
                                                 <v-flex xs12 class="mb-2">
                                                     <v-layout row wrap class="title text-center">
-                                                        <v-flex>
+                                                        <v-flex xs3>
                                                             <div class="caption grey--text">Original Budget</div>
                                                             <span>{{ totalStats.totalOrigBudgeted.toLocaleString() }}</span>
                                                         </v-flex>
-                                                        <v-flex>
+                                                        <v-flex xs3>
                                                             <div class="caption grey--text">Current Budget</div>
                                                             <span>{{ totalStats.totalCurrBudgeted.toLocaleString() }}</span>
                                                         </v-flex>
-                                                        <v-flex>
+                                                        <v-flex xs3>
                                                             <div class="caption grey--text">Total Committed</div>
                                                             <span>{{ Math.round(totalStats.totalCommited).toLocaleString() }}</span>
                                                         </v-flex>
-                                                        <v-flex xs12>
-                                                            <v-layout row class="ma-2">
-                                                                <v-flex>
-                                                                    <div class="caption grey--text">Quarter 1</div>
-                                                                    Q1
-                                                                </v-flex>
-                                                                <v-flex>
-                                                                    <div class="caption grey--text">Quarter 2</div>
-                                                                    Q2
-                                                                </v-flex>
-                                                                <v-flex>
-                                                                    <div class="caption grey--text">Quarter 3</div>
-                                                                    Q3
-                                                                </v-flex>
-                                                                <v-flex>
-                                                                    <div class="caption grey--text">Quarter 4</div>
-                                                                    Q4
-                                                                </v-flex>
-                                                                <v-flex>
-                                                                    <div class="caption grey--text">Cumulative</div>
-                                                                    Total
-                                                                </v-flex>
-                                                            </v-layout>
+                                                        <v-flex xs3>
+                                                            <div class="caption grey--text">Current Forecasted</div>
+                                                            <span>{{ Math.round(forecastData.slice(4,5)[0] + parseInt(totalStats.totalOrigBudgeted)).toLocaleString() }}</span>
                                                         </v-flex>
+                                                        <v-expand-transition>
+                                                             <v-flex xs12 v-show="showForecastDetail">
+                                                                <v-layout row align-center>
+                                                                    <v-flex xs3
+                                                                            v-for="(qtr, i) in forecastData.slice(0,4)"
+                                                                            :key="i"
+                                                                    >
+                                                                        <v-card height="75" flat :class="`grey lighten-4 ${qtr == 0 ? 'pt-3' : 'pt-1'}`">
+                                                                            <div class="caption grey--text">
+                                                                            {{`Quarter ${i + 1}`}}
+                                                                            <v-btn x-small
+                                                                                   icon
+                                                                                   text
+                                                                                   v-if="qtr !== 0"
+                                                                                   @click.prevent="deleteForecast(i + 1)">
+                                                                                <v-icon small color="error">close
+                                                                                </v-icon>
+                                                                            </v-btn>
+                                                                        </div>
+                                                                        <span>{{(qtr || 0).toLocaleString() }}</span>
+                                                                        </v-card>
+                                                                    </v-flex>
+                                                                </v-layout>
+                                                            </v-flex>
+                                                        </v-expand-transition>
                                                     </v-layout>
                                                 </v-flex>
                                                 <v-flex xs7>
@@ -170,15 +185,15 @@
 
                         <v-dialog v-model="accountMappingDialog" persistent max-width="600px">
                             <v-form ref="form">
-                                <v-card>
-                                    <v-card-title>
+                                <v-card class="pa-2">
+                                    <v-card-title class="mx-4">
                                         <v-layout>
                                             <v-flex xs12 md8>
-                                                <span class="headline  ml-4">{{(noAccounting ? 'Create ' : 'Modify ') + 'Accounting'}}</span>
+                                                <span class="headline">{{(noAccounting ? 'Create ' : 'Modify ') + 'Accounting'}}</span>
                                             </v-flex>
                                             <v-spacer></v-spacer>
                                             <v-flex xs12 md4>
-                                                <v-btn @click="showAddAccount = !showAddAccount" color="primary" text>
+                                                <v-btn @click="openShowAddAccount" color="primary" text>
                                                     Add New Account
                                                 </v-btn>
                                             </v-flex>
@@ -226,6 +241,7 @@
                                                     max-width="500px"
                                                     max-height="50"
                                                     hide-overlay
+                                                    persistent
                                             >
                                                 <v-card flat max-width="500">
                                                     <v-form ref="form2">
@@ -254,6 +270,10 @@
                                                                 <v-flex>
                                                                     <v-layout class="mt-3">
                                                                         <v-spacer></v-spacer>
+                                                                        <v-btn color="error" text
+                                                                               @click="showAddAccount = false">
+                                                                            Close
+                                                                        </v-btn>
                                                                         <v-btn
                                                                                 class="px-1"
                                                                                 color="primary"
@@ -270,7 +290,7 @@
                                             </v-dialog>
 
 
-                                            <v-card flat v-for="(p, i) in accounts" :key="p.key" color="grey lighten-4"
+                                            <v-card flat v-for="(p, i) in accounts" :key="p.lkey" color="grey lighten-4"
                                                     class="mb-2">
                                                 <v-layout row wrap class="pa-1">
                                                     <v-flex xs6 md4>
@@ -299,14 +319,14 @@
                                                     </v-flex>
                                                     <v-flex xs6 md2>
                                                         <div class="caption grey--text">Forecast Dist</div>
-                                                        <span>{{((s.forecast || p.forecast) || 0) * ((p.fct_dist_pct || 0)/100) }}</span>
+                                                        <span>{{ p.dist_forecast }}</span>
                                                     </v-flex>
                                                 </v-layout>
                                             </v-card>
                                         </v-container>
                                     </v-card-text>
-                                    <v-card-actions>
-                                        <span class="caption ml-4">*Click distribution percent text to edit.</span>
+                                    <v-card-actions class="mx-4">
+                                        <span class="caption">*Click distribution percent text to edit.</span>
                                         <v-spacer></v-spacer>
                                         <v-btn color="error" text @click="accountMappingDialog = !accountMappingDialog">
                                             Close
@@ -332,7 +352,7 @@
             <v-layout row wrap class="ma-2" v-if="!noAccounting">
                 <v-flex
                         v-for="p in person"
-                        :key="p.key"
+                        :key="p.lkey"
                         xs12 sm9 md6 lg4
                         class="pa-2"
                 >
@@ -491,30 +511,35 @@
 </template>
 
 <script>
+    const initialState = (showMore) => {
+        return {
+            showMore: showMore,
+            showForecastDetail: false,
+            confirmDeletePersonDialog: false,
+            accountMappingDialog: false,
+            dataTableDialog: false,
+            forecastDialog: false,
+            showEdit: false,
+            showAddAccount: false,
+            selectedEdit: '',
+            selectedEditValue: '',
+            newCostCenter: '',
+            newWd2Cd: '',
+            forecast: {
+                quarter: '',
+                amt: 0,
+                note: ''
+            },
+            columns: ['emplid', 'position_nbr', 'cost_center_reference_id', 'wd2_cd'],
+            accounts: []
+        }
+    };
+
     export default {
         name: "Person",
         props: ['posid'],
         data() {
-            return {
-                showMore: false,
-                confirmDeletePersonDialog: false,
-                accountMappingDialog: false,
-                dataTableDialog: false,
-                forecastDialog: false,
-                showEdit: false,
-                showAddAccount: false,
-                selectedEdit: '',
-                selectedEditValue: '',
-                newCostCenter: '',
-                newWd2Cd: '',
-                forecast: {
-                    quarter: '',
-                    amt: 0,
-                    note: ''
-                },
-                columns: ['emplid', 'position_nbr', 'cost_center_reference_id', 'wd2_cd'],
-                accounts: []
-            }
+            return initialState(false)
         },
         methods: {
             deletePerson(id) {
@@ -531,6 +556,10 @@
                 this.selectedEdit = index;
                 this.showEdit = true
             },
+            openShowAddAccount() {
+                this.showAddAccount = true;
+                this.$refs.form2.resetValidation()
+            },
             saveSelectedEdit() {
                 let accounts = this.accounts;
                 let editedObject = accounts[this.selectedEdit];
@@ -545,6 +574,7 @@
                 let dupe = curKeys.includes(this.newCostCenter + this.newWd2Cd);
                 if (valid && !dupe) {
                     this.accounts.unshift({
+                        lkey: this.s.emplid + '-' + this.s.position_nbr + '-' + this.newCostCenter + '-' + this.newWd2Cd,
                         emplid: this.s.emplid,
                         position_nbr: this.s.position_nbr,
                         cost_center_reference_id: this.newCostCenter,
@@ -556,10 +586,10 @@
                 } else {
                     if (dupe) {
                         this.$store.dispatch('openSnackbar', {
-                        message: 'Duplicate account',
-                        color: 'error',
-                        timeout: 2000
-                    })
+                            message: 'Duplicate account',
+                            color: 'error',
+                            timeout: 2000
+                        })
                     }
                 }
             },
@@ -585,17 +615,28 @@
                 }
             },
             submitForecast() {
-                if (this.$refs.form.validate()) {
+                if (this.$refs.form.validate() && this.forecast.amt !== "0") {
                     let forecast = this.forecast;
-                    let adjAmt = forecast.amt - this.totalStats.totalOrigBudgeted;
-                    forecast['amt'] = adjAmt;
+                    let currForecast = this.forecastData;
+                    currForecast.splice(4, 1); // Remove cumm element @ index 4
+                    let currForecastTotal = currForecast.reduce((t, i) => t + i) + parseInt(this.totalStats.totalOrigBudgeted);
                     forecast['quarter'] = 'q' + forecast.quarter.slice(-1);
+                    forecast['amt'] = (parseInt(forecast.amt) - currForecastTotal);
                     forecast['uid'] = this.s.emplid;
                     forecast['pid'] = this.s.position_nbr;
+                    console.log(forecast)
                     this.$store.dispatch('addForecast', forecast);
                     this.$refs.form.resetValidation();
-                    this.forecastDialog = false
+                    this.forecastDialog = false;
+                    Object.assign(this.$data, initialState(true))
                 }
+            },
+            deleteForecast(quarter) {
+                this.$store.dispatch("deleteForecast", {
+                    uid: this.s.emplid,
+                    pid: this.s.position_nbr,
+                    quarter: 'q' + quarter
+                })
             }
         },
         computed: {
@@ -608,8 +649,19 @@
                 })
                     .sort((a, b) => (a.total_committed_personal_services > b.total_committed_personal_services) ? 1 : -1)
             },
+            forecastData() {
+                let forecast = this.$store.getters.forecasts.filter(item => {
+                    return item.skey === this.posid
+                });
+                if (forecast.length > 0) {
+                    let f = ['q1', 'q2', 'q3', 'q4'].map(key => forecast[0][key]);
+                    return [...f, f.reduce((t, i) => t + i)]
+                } else {
+                    return [0, 0, 0, 0, 0]
+                }
+            },
             s() {
-                return this.person[0]
+                return (this.person || [])[0]
             },
             pageTitle() {
                 let tag = this.s.empl_class ? ` (${this.s.empl_class})` : '';
@@ -617,7 +669,7 @@
                 return name + tag
             },
             pageSalary() {
-                let start = ''
+                let start = '';
                 if (this.s.forecast_amt) {
                     start = `Forecast $${this.s.forecast_amt.toLocaleString()}`
                 } else {

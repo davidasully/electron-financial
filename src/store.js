@@ -5,7 +5,7 @@ import {DataFrame, Series} from 'data-forge';
 const knex = require('knex')({
     client: 'sqlite3',
     connection: {
-        filename: "./my-db.sqlite"
+        filename: "\\\\itfs1.asu.edu\\health\\shared\\Business Services\\Finance\\Budget\\FY20\\fy20-app-db.sqlite"
     },
     useNullAsDefault: true
 });
@@ -31,12 +31,6 @@ const matchKeys = (array1, array2) => {
 
 export const store = new Vuex.Store({
     state: {
-        set: {
-            db: {
-                file_loc: './my-db.sqlite',
-            },
-            quarter: 'q1'
-        },
         search: '',
         selected: [],
         snackbar: {
@@ -200,6 +194,18 @@ export const store = new Vuex.Store({
                     dispatch('loadPersons')
                 })
         },
+        deleteForecast({dispatch}, payload) {
+            let table = 'forecast';
+            knex(table)
+                .where('uid', payload.uid)
+                .andWhere('pid', payload.pid)
+                .andWhere('quarter', payload.quarter)
+                .del()
+                .asCallback(err => {
+                    if (err) return console.error(err);
+                    dispatch('loadForecasts')
+                })
+        },
         addForecast({commit}, payload) {
             let table = 'forecast';
             knex(table).insert(payload)
@@ -226,6 +232,26 @@ export const store = new Vuex.Store({
         }
     },
     getters: {
+        forecasts(state) {
+            let forecast = state.data.forecasts.map(i => {
+                i['skey'] = i.uid + '-' + i.pid;
+                i['note'] = i.note ? i.quarter + ': ' + i.note : '';
+                i['q1'] = i.quarter === 'q1' ? i.amt : 0;
+                i['q2'] = i.quarter === 'q2' ? i.amt : 0;
+                i['q3'] = i.quarter === 'q3' ? i.amt : 0;
+                i['q4'] = i.quarter === 'q4' ? i.amt : 0;
+                return i
+            });
+            return new DataFrame(forecast)
+                .pivot('skey', {
+                    q1: Series.sum,
+                    q2: Series.sum,
+                    q3: Series.sum,
+                    q4: Series.sum,
+                    note: Series.sum
+                })
+                .toArray()
+        },
         tabs(state) {
             return state.selected.map(tab => {
                 let generic = ['No Employee', 'Employee Group'].includes(tab.name);
@@ -235,9 +261,12 @@ export const store = new Vuex.Store({
                 }
             })
         },
-        combinedBPC(state) {
-            var bpc = state.data.bpc;
-
+        combinedBPC(state, getters) {
+            let bpc = state.data.bpc.map(i => {
+                i['skey'] = i.emplid + '-' + i.position_nbr;
+                i['lkey'] = i.skey + '-' + i.cost_center_reference_id + '-' + i.wd2_cd;
+                return i
+            });
             if (state.data.persons.length > 0) {
                 let submitted_persons = state.data.persons;
                 let default_positions = state.data.default_positions;
@@ -251,6 +280,7 @@ export const store = new Vuex.Store({
 
                         (left, right) => {
                             return {
+                                skey: (left.uid || left.id) + (left.pid || left.type),
                                 pid: left.id,
                                 type: left.type,
                                 jobcode_descr: right.type_name,
@@ -272,60 +302,46 @@ export const store = new Vuex.Store({
             }
 
             if (state.data.accounts.length > 0) {
-                let existingKeys = bpc.map(i => i.emplid + '-' + i.position_nbr + '-' + i.cost_center_reference_id + '-' + i.wd2_cd);
                 let accounts = state.data.accounts.map(i => {
-                    i['key'] = i.uid + '-' + i.pid + '-' + i.cost_center_reference_id + '-' + i.wd2_cd;
+                    i['lkey'] = i.uid + '-' + i.pid + '-' + i.cost_center_reference_id + '-' + i.wd2_cd;
+                    i['skey'] = i.uid + '-' + i.pid;
                     return i
                 });
-                let newAccounts = accounts.filter(i => !existingKeys.includes(i.key));
+                let newAccounts = accounts.filter(i => !bpc.map(r => r.lkey).includes(i.lkey));
                 if (newAccounts.length > 0) {
-                    bpc = bpc.map(i => {
-                        i['key'] = i.emplid + '-' + i.position_nbr;
-                        return i
-                    });
-                    newAccounts = newAccounts.map(i => {
-                        i['key'] = i.uid + '-' + i.pid;
-                        return i
-                    });
-
                     let columns = ['name', "emplid", "position_nbr", "jobcode_descr", "ten_status", "deptid", "dept_descr",
-                        "empl_class", "paygroup", "empl_type", "ben_elig_flg", "fte", "annual_rt", "key"];
+                        "empl_class", "paygroup", "empl_type", "ben_elig_flg", "fte", "annual_rt", "skey", "lkey"];
 
                     let bpcDF = new DataFrame(bpc);
                     let accts = new DataFrame(newAccounts);
-                    let newRows = bpcDF.distinct(row => row.key)
+                    let newRows = bpcDF.distinct(row => row.skey)
                         .subset(columns)
                         .join(
                             accts,
-                            left => left.key,
-                            right => right.key,
+                            left => left.skey,
+                            right => right.skey,
                             (left, right) => {
                                 return {
                                     name: left.name, emplid: left.emplid, position_nbr: left.position_nbr,
                                     ten_status: left.ten_status, deptid: left.deptid, dept_descr: left.dept_descr,
                                     empl_class: left.empl_class, paygroup: left.paygroup, empl_type: left.empl_type,
                                     ben_elig_flg: left.ben_elig_flg, fte: left.fte, annual_rt: left.annual_rt,
-                                    cost_center_reference_id: right.cost_center_reference_id, wd2_cd: right.wd2_cd
+                                    cost_center_reference_id: right.cost_center_reference_id, wd2_cd: right.wd2_cd,
+                                    lkey: right.lkey, skey: right.skey
                                 }
                             }
                         )
                         .toArray();
-                    console.log(newRows)
                     let mper = matchKeys(newRows, bpc);
                     let mbpc = matchKeys(bpc, newRows);
                     bpc = [...mper, ...mbpc];
                 }
-                bpc = bpc.map(i => {
-                    i['key'] = i.emplid + '-' + i.position_nbr + '-' + i.cost_center_reference_id + '-' + i.wd2_cd;
-                    i['fct_dist_pct'] = '';
-                    return i
-                });
                 let bpcDF = new DataFrame(bpc);
                 let accountDF = new DataFrame(accounts);
                 bpc = bpcDF.joinOuterLeft(
                     accountDF,
-                    left => left.key,
-                    right => right.key,
+                    left => left.lkey,
+                    right => right.lkey,
                     (left, right) => {
                         let newLeft = Object.assign({}, left);
                         newLeft['fct_dist_pct'] = Object.assign({}, right).fct_dist_pct;
@@ -336,34 +352,13 @@ export const store = new Vuex.Store({
             }
 
             if (state.data.forecasts.length > 0) {
-                let forecasts = state.data.forecasts.map(i => {
-                    i['key'] = i.uid + '-' + i.pid;
-                    i['note'] = i.note ? i.quarter + ': ' + i.note : '';
-                    i['q1'] = i.quarter === 'q1' ? i.amt : 0;
-                    i['q2'] = i.quarter === 'q2' ? i.amt : 0;
-                    i['q3'] = i.quarter === 'q3' ? i.amt : 0;
-                    i['q4'] = i.quarter === 'q4' ? i.amt : 0;
-                    return i
-                });
-                bpc = bpc.map(i => {
-                    i['key'] = i.emplid + '-' + i.position_nbr;
-                    return i
-                });
-
                 let bpcDF = new DataFrame(bpc);
-                let forecastDF = new DataFrame(forecasts)
-                    .pivot('key', {
-                        q1: Series.sum,
-                        q2: Series.sum,
-                        q3: Series.sum,
-                        q4: Series.sum,
-                        note: Series.sum
-                    })
+                let forecastDF = new DataFrame(getters.forecasts);
 
                 bpc = bpcDF.joinOuterLeft(
                     forecastDF,
-                    left => left.key,
-                    right => right.key,
+                    left => left.skey,
+                    right => right.skey,
                     (left, right) => {
                         let newLeft = Object.assign({}, left);
                         let newRight = (({q1, q2, q3, q4}) => ({q1, q2, q3, q4}))(Object.assign({}, right));
@@ -372,16 +367,12 @@ export const store = new Vuex.Store({
                 )
                     .toArray()
             }
-
-            bpc = bpc.map(i => {
-                i['key'] = i.emplid + '-' + i.position_nbr + '-' + i.cost_center_reference_id + '-' + i.wd2_cd;
-                return i
-            });
             return new DataFrame(bpc)
                 .generateSeries({
-                    posid: r => r.emplid + '-' + r.position_nbr,
-                    name: r => r.name ? r.name : r.position_budget_type,
-                    forecast: r => r.q1 + r.q2 + r.q3 + r.q4
+                    posid: r => r.skey,
+                    name: r => r.name || r.position_budget_type,
+                    forecast: r => r.q1 + r.q2 + r.q3 + r.q4,
+                    dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * r.forecast
                 })
                 .orderBy(row => row.name)
                 .toArray()
