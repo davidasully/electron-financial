@@ -80,7 +80,7 @@
 
                         <v-dialog v-model="forecastDialog" persistent max-width="600px">
                             <template v-slot:activator="{ on }">
-                                <v-btn v-on="on" color="primary" class="ml-2">Forecast</v-btn>
+                                <v-btn v-on="on" color="primary" class="ml-2">Forecast Input</v-btn>
                             </template>
                             <v-form ref="form">
                                 <v-card>
@@ -102,42 +102,64 @@
                                             <v-layout wrap>
                                                 <v-flex xs12 class="mb-2">
                                                     <v-layout row wrap class="title text-center">
-                                                        <v-flex xs3>
-                                                            <div class="caption grey--text">Original Budget</div>
-                                                            <span>{{ totalStats.totalOrigBudgeted.toLocaleString() }}</span>
-                                                        </v-flex>
-                                                        <v-flex xs3>
-                                                            <div class="caption grey--text">Current Budget</div>
-                                                            <span>{{ totalStats.totalCurrBudgeted.toLocaleString() }}</span>
-                                                        </v-flex>
-                                                        <v-flex xs3>
-                                                            <div class="caption grey--text">Total Committed</div>
-                                                            <span>{{ Math.round(totalStats.totalCommited).toLocaleString() }}</span>
-                                                        </v-flex>
-                                                        <v-flex xs3>
-                                                            <div class="caption grey--text">Current Forecasted</div>
-                                                            <span>{{ Math.round(forecastData.slice(4,5)[0] + parseInt(totalStats.totalOrigBudgeted)).toLocaleString() }}</span>
+                                                        <v-flex xs12>
+                                                            <v-card outlined class="py-2">
+                                                                <v-layout>
+                                                                    <v-flex xs3>
+                                                                        <div class="caption grey--text">Original
+                                                                            Budget
+                                                                        </div>
+                                                                        <span>{{ totalStats.totalOrigBudgeted.toLocaleString() }}</span>
+                                                                    </v-flex>
+                                                                    <v-flex xs3>
+                                                                        <div class="caption grey--text">Current Budget
+                                                                        </div>
+                                                                        <span>{{ totalStats.totalCurrBudgeted.toLocaleString() }}</span>
+                                                                    </v-flex>
+                                                                    <v-flex xs3>
+                                                                        <div class="caption grey--text">Total
+                                                                            Committed
+                                                                        </div>
+                                                                        <span>{{ Math.round(totalStats.totalCommited).toLocaleString() }}</span>
+                                                                    </v-flex>
+                                                                    <v-flex xs3>
+                                                                        <div class="caption grey--text">Current
+                                                                            Forecast
+                                                                        </div>
+                                                                        <span>{{ currentForecastTotal.toLocaleString() }}</span>
+                                                                    </v-flex>
+                                                                </v-layout>
+                                                            </v-card>
                                                         </v-flex>
                                                         <v-expand-transition>
-                                                             <v-flex xs12 v-show="showForecastDetail">
+                                                            <v-flex xs12 v-show="showForecastDetail">
                                                                 <v-layout row align-center>
                                                                     <v-flex xs3
-                                                                            v-for="(qtr, i) in forecastData.slice(0,4)"
+                                                                            v-for="(qtr, i) in forecastData.amts.slice(1,5)"
                                                                             :key="i"
                                                                     >
-                                                                        <v-card height="75" flat :class="`grey lighten-4 ${qtr == 0 ? 'pt-3' : 'pt-1'}`">
+                                                                        <v-card height="75" flat
+                                                                                :class="`grey lighten-4 ${qtr == 0 ? 'pt-3' : 'pt-1'}`">
                                                                             <div class="caption grey--text">
-                                                                            {{`Quarter ${i + 1}`}}
-                                                                            <v-btn x-small
-                                                                                   icon
-                                                                                   text
-                                                                                   v-if="qtr !== 0"
-                                                                                   @click.prevent="deleteForecast(i + 1)">
-                                                                                <v-icon small color="error">close
-                                                                                </v-icon>
-                                                                            </v-btn>
-                                                                        </div>
-                                                                        <span>{{(qtr || 0).toLocaleString() }}</span>
+                                                                                {{`Quarter ${i + 1}`}}
+                                                                                <v-btn x-small
+                                                                                       icon
+                                                                                       text
+                                                                                       v-if="qtr !== 0"
+                                                                                       @click.prevent="deleteForecast(i + 1)">
+                                                                                    <v-icon small color="error">close
+                                                                                    </v-icon>
+                                                                                </v-btn>
+                                                                            </div>
+                                                                            <span>{{(qtr || 0).toLocaleString() }}</span>
+                                                                        </v-card>
+                                                                    </v-flex>
+                                                                    <v-flex xs12>
+                                                                        <v-card min-height="75" flat
+                                                                                class="grey lighten-4">
+                                                                            <v-card-text class="text-left">
+                                                                                <div>{{ forecastData.note }}</div>
+                                                                            </v-card-text>
                                                                         </v-card>
                                                                     </v-flex>
                                                                 </v-layout>
@@ -356,7 +378,7 @@
                         xs12 sm9 md6 lg4
                         class="pa-2"
                 >
-                    <v-card class="pa-7">
+                    <v-card class="pa-5">
                         <v-layout>
                             <v-flex xs12>
                                 <v-layout>
@@ -382,20 +404,33 @@
                                 </v-layout>
                                 <v-layout class="py-2">
                                     <v-flex xs5 class="text-center">
-                                        <div class="caption grey--text">Mapped</div>
-                                        <div class="title">{{p.dist_pct + '%'}}</div>
+                                        <div class="caption grey--text">PS Mapped</div>
+                                        <div class="title">{{(p.dist_pct || 0) + '%'}}</div>
                                     </v-flex>
                                     <v-flex xs2></v-flex>
                                     <v-flex xs5 class="text-center">
-                                        <div class="caption grey--text">Total Commited PS</div>
+                                        <div class="caption grey--text">PS Total Committed</div>
                                         <div class="title">
                                             {{Math.round(p.total_committed_personal_services).toLocaleString()}}
                                         </div>
                                     </v-flex>
                                 </v-layout>
+                                <v-layout v-if="forecastResult.length > 0">
+                                    <v-flex xs5 class="text-center">
+                                        <div class="caption grey--text">Forecast Mapped</div>
+                                        <div class="title">{{p.fct_dist_pct + '%'}}</div>
+                                    </v-flex>
+                                    <v-flex xs2></v-flex>
+                                    <v-flex xs5 class="text-center">
+                                        <div class="caption grey--text">Forecast Amount</div>
+                                        <div class="title">
+                                            {{p.dist_forecast.toLocaleString()}}
+                                        </div>
+                                    </v-flex>
+                                </v-layout>
                             </v-flex>
                         </v-layout>
-                        <v-divider v-if="showMore"></v-divider>
+                        <v-divider v-if="showMore" class="mt-2"></v-divider>
                         <v-expand-transition>
                             <div class="mx-5 pr-2" v-show="showMore">
                                 <v-layout row wrap>
@@ -601,6 +636,7 @@
                             pid: i.position_nbr,
                             cost_center_reference_id: i.cost_center_reference_id,
                             wd2_cd: i.wd2_cd,
+                            total_original_budget: this.totalStats.totalOrigBudgeted,
                             fct_dist_pct: i.fct_dist_pct
                         }
                     });
@@ -615,16 +651,20 @@
                 }
             },
             submitForecast() {
-                if (this.$refs.form.validate() && this.forecast.amt !== "0") {
+                if (this.$refs.form.validate()) {
                     let forecast = this.forecast;
-                    let currForecast = this.forecastData;
-                    currForecast.splice(4, 1); // Remove cumm element @ index 4
-                    let currForecastTotal = currForecast.reduce((t, i) => t + i) + parseInt(this.totalStats.totalOrigBudgeted);
+                    let amt = parseInt(forecast.amt) - this.currentForecastTotal;
+                    if (amt === 0) {
+                        return this.$store.dispatch('openSnackbar', {
+                            message: 'Invalid forecast amount.',
+                            color: 'error',
+                            timeout: 2000
+                        })
+                    }
                     forecast['quarter'] = 'q' + forecast.quarter.slice(-1);
-                    forecast['amt'] = (parseInt(forecast.amt) - currForecastTotal);
+                    forecast['amt'] = amt;
                     forecast['uid'] = this.s.emplid;
                     forecast['pid'] = this.s.position_nbr;
-                    console.log(forecast)
                     this.$store.dispatch('addForecast', forecast);
                     this.$refs.form.resetValidation();
                     this.forecastDialog = false;
@@ -649,16 +689,28 @@
                 })
                     .sort((a, b) => (a.total_committed_personal_services > b.total_committed_personal_services) ? 1 : -1)
             },
-            forecastData() {
-                let forecast = this.$store.getters.forecasts.filter(item => {
+            forecastResult() {
+                return this.$store.getters.forecasts.filter(item => {
                     return item.skey === this.posid
-                });
+                })
+            },
+            forecastData() {
+                let forecast = this.forecastResult;
+                let amts = [0, 0, 0, 0];
+                let note = '';
                 if (forecast.length > 0) {
-                    let f = ['q1', 'q2', 'q3', 'q4'].map(key => forecast[0][key]);
-                    return [...f, f.reduce((t, i) => t + i)]
-                } else {
-                    return [0, 0, 0, 0, 0]
+                    amts = ['q1', 'q2', 'q3', 'q4'].map(key => forecast[0][key]);
+                    note = forecast[0].note
                 }
+                let origBudget = parseInt(this.totalStats.totalOrigBudgeted);
+                return {
+                    amts: [origBudget, ...amts],
+                    note: note
+                }
+            },
+            currentForecastTotal() {
+                let amts = this.forecastData.amts;
+                return amts.reduce((t, i) => t + i)
             },
             s() {
                 return (this.person || [])[0]

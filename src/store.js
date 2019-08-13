@@ -144,6 +144,7 @@ export const store = new Vuex.Store({
                         t.string('pid', 10);
                         t.string('cost_center_reference_id', 10);
                         t.string('wd2_cd', 10);
+                        t.integer('total_original_budget');
                         t.string('fct_dist_pct', 3);
                         t.timestamp('created_at').defaultTo(knex.fn.now());
                     })
@@ -220,14 +221,22 @@ export const store = new Vuex.Store({
         },
         addAccountMapping({commit}, payload) {
             let table = 'account';
-            knex(table).insert(payload)
-                .asCallback((err) => {
+            console.log(payload)
+            knex(table)
+                .where('uid', payload[0].uid)
+                .andWhere('pid', payload[0].pid)
+                .del()
+                .asCallback(err => {
                     if (err) return console.error(err);
-                    knex.select().from(table)
-                        .asCallback((err, rows) => {
-                            if (err) return console.error(err)
-                            commit('loadMappedAccounts', rows)
-                        })
+                    knex(table).insert(payload)
+                    .asCallback((err) => {
+                        if (err) return console.error(err);
+                        knex.select().from(table)
+                            .asCallback((err, rows) => {
+                                if (err) return console.error(err)
+                                commit('loadMappedAccounts', rows)
+                            })
+                    })
                 })
         }
     },
@@ -235,7 +244,7 @@ export const store = new Vuex.Store({
         forecasts(state) {
             let forecast = state.data.forecasts.map(i => {
                 i['skey'] = i.uid + '-' + i.pid;
-                i['note'] = i.note ? i.quarter + ': ' + i.note : '';
+                i['note'] = i.note ? i.quarter.toUpperCase() + ': ' + i.note + ' ' : '';
                 i['q1'] = i.quarter === 'q1' ? i.amt : 0;
                 i['q2'] = i.quarter === 'q2' ? i.amt : 0;
                 i['q3'] = i.quarter === 'q3' ? i.amt : 0;
@@ -327,7 +336,7 @@ export const store = new Vuex.Store({
                                     empl_class: left.empl_class, paygroup: left.paygroup, empl_type: left.empl_type,
                                     ben_elig_flg: left.ben_elig_flg, fte: left.fte, annual_rt: left.annual_rt,
                                     cost_center_reference_id: right.cost_center_reference_id, wd2_cd: right.wd2_cd,
-                                    lkey: right.lkey, skey: right.skey
+                                    jobcode_descr: left.jobcode_descr, lkey: right.lkey, skey: right.skey
                                 }
                             }
                         )
@@ -344,7 +353,9 @@ export const store = new Vuex.Store({
                     right => right.lkey,
                     (left, right) => {
                         let newLeft = Object.assign({}, left);
-                        newLeft['fct_dist_pct'] = Object.assign({}, right).fct_dist_pct;
+                        let newRight = Object.assign({}, right)
+                        newLeft['fct_dist_pct'] = newRight.fct_dist_pct;
+                        newLeft['total_original_budget'] = newRight.total_original_budget;
                         return newLeft
                     }
                 )
@@ -372,7 +383,7 @@ export const store = new Vuex.Store({
                     posid: r => r.skey,
                     name: r => r.name || r.position_budget_type,
                     forecast: r => r.q1 + r.q2 + r.q3 + r.q4,
-                    dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * r.forecast
+                    dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * (r.forecast + r.total_original_budget)
                 })
                 .orderBy(row => row.name)
                 .toArray()
