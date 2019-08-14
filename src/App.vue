@@ -5,9 +5,9 @@
                 <v-app-bar
                         app
                         clipped-left
-                        color="amber"
+                        :class="{'grey darken-2': isDarkTheme, amber: !isDarkTheme}"
                 >
-<!--                    <v-icon @click="drawer = !drawer">menu</v-icon>-->
+                    <!--                    <v-icon @click="drawer = !drawer">menu</v-icon>-->
                     <span @click="navigateHome"
                           style="cursor: pointer"
                           class="title ml-3 mr-5"
@@ -15,13 +15,19 @@
                 <span class="font-weight-light">Forecast</span></span>
                     <v-spacer></v-spacer>
 
-                    <!--BEGIN ADD NEW FORM -->
                     <v-btn icon
                            x-large
                            @click.prevent="togglePivotTab"
                     >
                         <v-icon>table_chart</v-icon>
                     </v-btn>
+                    <v-btn icon
+                           x-large
+                           @click.prevent="exportCSV"
+                    >
+                        <v-icon>save</v-icon>
+                    </v-btn>
+                    <!--BEGIN ADD NEW FORM -->
                     <v-dialog v-model="dialog" persistent max-width="600px">
                         <template v-slot:activator="{ on }">
                             <v-btn
@@ -30,7 +36,7 @@
                                     class="mr-5"
                                     v-on="on"
                             >
-                                <v-icon>add_circle_outline</v-icon>
+                                <v-icon>add_circle</v-icon>
                             </v-btn>
                         </template>
                         <v-form ref="form">
@@ -132,61 +138,7 @@
 
                 </v-app-bar>
 
-                <v-navigation-drawer
-                        v-model="drawer"
-                        app
-                        clipped
-                        color="grey lighten-4"
-                >
-                    <v-list
-                            dense
-                            class="grey lighten-4"
-                    >
-                        <template v-for="(item, i) in items">
-                            <v-layout
-                                    v-if="item.heading"
-                                    :key="i"
-                                    align-center
-                            >
-                                <v-flex xs6>
-                                    <v-subheader v-if="item.heading">
-                                        {{ item.heading }}
-                                    </v-subheader>
-                                </v-flex>
-                                <v-flex
-                                        xs6
-                                        class="text-right"
-                                >
-                                    <v-btn
-                                            small
-                                            text
-                                    >edit
-                                    </v-btn>
-                                </v-flex>
-                            </v-layout>
-                            <v-divider
-                                    v-else-if="item.divider"
-                                    :key="i"
-                                    dark
-                                    class="my-4"
-                            ></v-divider>
-                            <v-list-item
-                                    v-else
-                                    :key="i"
-                                    :to="item.name"
-                            >
-                                <v-list-item-action>
-                                    <v-icon>{{ item.icon }}</v-icon>
-                                </v-list-item-action>
-                                <v-list-item-content>
-                                    <v-list-item-title class="grey--text">
-                                        {{ item.text }}
-                                    </v-list-item-title>
-                                </v-list-item-content>
-                            </v-list-item>
-                        </template>
-                    </v-list>
-                </v-navigation-drawer>
+
                 <v-content>
 
                     <v-snackbar
@@ -207,7 +159,9 @@
 
                 </v-content>
                 <v-footer app>
-                    <img src="@/assets/logo.png" height="60px">
+                    <img :src="require(`@/assets/logo_${isDarkTheme ? 'dark' : 'light'}.png`)" height="60px">
+                    <v-spacer></v-spacer>
+                    <v-switch @change="setDarkMode" v-model="darkModeState" label="Lights Out!"></v-switch>
                 </v-footer>
             </div>
         </template>
@@ -219,7 +173,7 @@
 
     const initialState = () => {
         return {
-            drawer: false,
+            darkModeState: false,
             dialog: false,
             search: '',
             positionType: 'N',
@@ -230,23 +184,7 @@
                 pid: '',
                 deptid: '',
                 fte: 0
-            },
-            items: [
-                {icon: 'lightbulb_outline', text: 'Pivot Table', name: '/pivot'},
-                {icon: 'touch_app', text: 'Reminders', name: ''},
-                {divider: true},
-                {heading: 'Labels'},
-                {icon: 'add', text: 'Create new label', name: ''},
-                {divider: true},
-                {icon: 'archive', text: 'Archive', name: ''},
-                {icon: 'delete', text: 'Trash'},
-                {divider: true},
-                {icon: 'settings', text: 'Settings', name: ''},
-                {icon: 'chat_bubble', text: 'Trash', name: ''},
-                {icon: 'help', text: 'Help'},
-                {icon: 'phonelink', text: 'App downloads', name: ''},
-                {icon: 'keyboard', text: 'Keyboard shortcuts', name: ''},
-            ]
+            }
         }
     };
 
@@ -259,6 +197,9 @@
             return initialState()
         },
         methods: {
+            setDarkMode() {
+                this.$vuetify.theme.dark = this.darkModeState
+            },
             resetWindow() {
                 Object.assign(this.$data, initialState())
             },
@@ -285,8 +226,36 @@
                     this.resetWindow()
                     this.$refs.form.resetValidation()
                 }
-            }
+            },
+            exportCSV() {
+                let csvContent = "data:text/csv;charset=utf-8,";
+                let arrData = this.$store.getters.combinedBPC;
+                if (arrData.length > 0) {
+                    let keys = Object.keys(arrData[arrData.length - 1]);
+                    csvContent += [
+                        keys.join(","),
+                        ...arrData.map(row => {
+                                return keys.map(key => row[key])
+                                    .map(item => {
+                                        if (typeof item === 'string') {
+                                            return "\"" + item + "\""
+                                        }
+                                        return item
+                                    })
+                                    .join(",")
+                            }
+                        )
+                    ]
+                        .join("\n")
+                        .replace(/(^\[)|(]$)/gm, "");
 
+                    const data = encodeURI(csvContent);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", data);
+                    link.setAttribute("download", "export.csv");
+                    link.click();
+                }
+            }
         },
         computed: {
             default_positions() {
@@ -304,10 +273,13 @@
                     keep.unshift('PivotView')
                 }
                 return keep
+            },
+            isDarkTheme() {
+                return this.$vuetify.theme.dark
             }
         },
         created() {
-            this.$vuetify.theme.dark = false;
+            this.$vuetify.theme.dark = this.darkModeState;
             this.$store.dispatch('loadBPC');
             this.$store.dispatch('loadPersons');
             this.$store.dispatch('loadForecasts');

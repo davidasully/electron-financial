@@ -140,7 +140,7 @@
                                                                             :key="i"
                                                                     >
                                                                         <v-card height="75" flat
-                                                                                :class="`grey lighten-4 ${qtr == 0 ? 'pt-3' : 'pt-1'}`">
+                                                                                :class="`grey ${isDarkTheme ? 'darken-2' : 'lighten-4'} ${qtr == 0 ? 'pt-3' : 'pt-1'}`">
                                                                             <div class="caption grey--text">
                                                                                 {{`Quarter ${i + 1}`}}
                                                                                 <v-btn x-small
@@ -157,7 +157,7 @@
                                                                     </v-flex>
                                                                     <v-flex xs12>
                                                                         <v-card min-height="75" flat
-                                                                                class="grey lighten-4">
+                                                                                :class="`grey ${isDarkTheme ? 'darken-2' : 'lighten-4'}`">
                                                                             <v-card-text class="text-left">
                                                                                 <div>{{ forecastData.note }}</div>
                                                                             </v-card-text>
@@ -314,8 +314,8 @@
                                             </v-dialog>
 
 
-                                            <v-card flat v-for="(p, i) in accounts" :key="p.lkey" color="grey lighten-4"
-                                                    class="mb-2">
+                                            <v-card flat v-for="(p, i) in accounts" :key="p.lkey"
+                                                    :class="`grey ${isDarkTheme ? 'darken-2' : 'lighten-4'} mb-2`">
                                                 <v-layout row wrap class="pa-1">
                                                     <v-flex xs6 md4>
                                                         <div class="caption grey--text">Cost Center</div>
@@ -681,6 +681,9 @@
             }
         },
         computed: {
+            isDarkTheme() {
+                return this.$vuetify.theme.dark
+            },
             person() {
                 let posid = this.posid.split('-');
                 let uid = posid[0];

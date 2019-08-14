@@ -37,6 +37,7 @@
                 this.$store.dispatch('removeSelected', object)
             },
             closePivotTab() {
+                this.$router.push('/');
                 this.$store.dispatch('togglePivotTab')
             }
         }

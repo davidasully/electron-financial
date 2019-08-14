@@ -4,7 +4,10 @@
                 justify-center
                 align-center
         >
-            <Pivot v-once v-if="setup.data" :props="setup"></Pivot>
+            <div v-once v-if="setup.data">
+                <span>Last updated: {{ dataDate.toLocaleTimeString() }}</span>
+                <Pivot :props="setup"></Pivot>
+            </div>
         </v-layout>
     </v-container>
 </template>
@@ -26,7 +29,8 @@
                     vals: ['expense_actuals_personal_services'],
                     aggNm: 'Sum',
                     rendNm: 'Table'
-                }
+                },
+                dataDate: new Date()
             }
         }
     }
