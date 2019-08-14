@@ -1,5 +1,5 @@
 <template>
-    <div class="person" v-if="s">
+    <div class="person" v-if="sPerson">
         <v-layout align-start justify-start column fill-height class="mx-6 mt-2 grey--text ">
             <v-flex class="mb-n1">
                 <v-layout>
@@ -8,7 +8,7 @@
                             <template v-slot:activator="{ on }">
                                 <h1 v-on="on">{{ pageTitle }}</h1>
                             </template>
-                            <span>{{'EMPLID: ' + s.emplid}}</span>
+                            <span>{{'EMPLID: ' + sPerson.emplid}}</span>
                         </v-tooltip>
                     </v-flex>
                     <v-flex v-if="userCreated">
@@ -28,7 +28,8 @@
                                     <v-card>
                                         <v-card-title class="headline">Are you sure?</v-card-title>
                                         <v-card-text>
-                                            {{`This action will permanently delete ${s.name} (ID: ${s.emplid}) and
+                                            {{`This action will permanently delete ${sPerson.name} (ID:
+                                            ${sPerson.emplid}) and
                                             associated account distributions.`}}
                                         </v-card-text>
                                         <v-card-actions>
@@ -36,7 +37,7 @@
                                             <v-btn color="error" text @click="confirmDeletePersonDialog = false">
                                                 cancel
                                             </v-btn>
-                                            <v-btn color="primary" text @click="deletePerson(s.emplid)">delete</v-btn>
+                                            <v-btn color="primary" text @click="deletePerson(sPerson.emplid)">delete</v-btn>
                                         </v-card-actions>
                                     </v-card>
                                 </v-dialog>
@@ -47,7 +48,7 @@
             </v-flex>
             <v-flex class="mb-1">
                 <h3>
-                    {{s.jobcode_descr}}
+                    {{sPerson.jobcode_descr}}
                     <v-btn color="primary"
                            class="ml-1"
                            x-small
@@ -66,10 +67,10 @@
             <v-expand-transition>
                 <div v-show="showMore | noAccounting">
                     <v-flex class="mb-n1">
-                        <span>{{s.dept_descr}}</span>
+                        <span>{{sPerson.dept_descr}}</span>
                     </v-flex>
                     <v-flex>
-                        <span>{{s.ben_elig_flg === 'Y' ? 'Benefit Eligible' : 'Not Benefit Eligible'}}</span>
+                        <span>{{sPerson.ben_elig_flg === 'Y' ? 'Benefit Eligible' : 'Not Benefit Eligible'}}</span>
                     </v-flex>
                     <v-flex class="mt-2">
 
@@ -241,6 +242,7 @@
                                                                         autofocus
                                                                         outlined
                                                                         full-width
+                                                                        v-on:keyup.enter.stop="saveSelectedEdit"
                                                                 ></v-text-field>
                                                             </v-flex>
                                                             <v-flex xs12>
@@ -341,7 +343,7 @@
                                                     </v-flex>
                                                     <v-flex xs6 md2>
                                                         <div class="caption grey--text">Forecast Dist</div>
-                                                        <span>{{ p.dist_forecast }}</span>
+                                                        <span>{{ p.dist_forecast || 0 }}</span>
                                                     </v-flex>
                                                 </v-layout>
                                             </v-card>
@@ -432,8 +434,8 @@
                         </v-layout>
                         <v-divider v-if="showMore" class="mt-2"></v-divider>
                         <v-expand-transition>
-                            <div class="mx-5 pr-2" v-show="showMore">
-                                <v-layout row wrap>
+                            <div class="ma-2 pr-2" v-show="showMore">
+                                <v-layout row wrap class="pb-2">
                                     <v-flex sm12 md6>
                                         <v-layout>
                                             <v-flex class="text-center">
@@ -484,7 +486,7 @@
                                     </v-flex>
                                 </v-layout>
                                 <v-divider></v-divider>
-                                <v-layout row wrap>
+                                <v-layout row wrap class="pt-2">
                                     <v-flex xs12 md6>
                                         <v-layout>
                                             <v-flex class="text-center">
@@ -593,7 +595,6 @@
             },
             openShowAddAccount() {
                 this.showAddAccount = true;
-                this.$refs.form2.resetValidation()
             },
             saveSelectedEdit() {
                 let accounts = this.accounts;
@@ -609,9 +610,9 @@
                 let dupe = curKeys.includes(this.newCostCenter + this.newWd2Cd);
                 if (valid && !dupe) {
                     this.accounts.unshift({
-                        lkey: this.s.emplid + '-' + this.s.position_nbr + '-' + this.newCostCenter + '-' + this.newWd2Cd,
-                        emplid: this.s.emplid,
-                        position_nbr: this.s.position_nbr,
+                        lkey: this.sPerson.emplid + '-' + this.sPerson.position_nbr + '-' + this.newCostCenter + '-' + this.newWd2Cd,
+                        emplid: this.sPerson.emplid,
+                        position_nbr: this.sPerson.position_nbr,
                         cost_center_reference_id: this.newCostCenter,
                         wd2_cd: this.newWd2Cd,
                         fct_dist_pct: 0
@@ -663,8 +664,8 @@
                     }
                     forecast['quarter'] = 'q' + forecast.quarter.slice(-1);
                     forecast['amt'] = amt;
-                    forecast['uid'] = this.s.emplid;
-                    forecast['pid'] = this.s.position_nbr;
+                    forecast['uid'] = this.sPerson.emplid;
+                    forecast['pid'] = this.sPerson.position_nbr;
                     this.$store.dispatch('addForecast', forecast);
                     this.$refs.form.resetValidation();
                     this.forecastDialog = false;
@@ -673,8 +674,8 @@
             },
             deleteForecast(quarter) {
                 this.$store.dispatch("deleteForecast", {
-                    uid: this.s.emplid,
-                    pid: this.s.position_nbr,
+                    uid: this.sPerson.emplid,
+                    pid: this.sPerson.position_nbr,
                     quarter: 'q' + quarter
                 })
             }
@@ -712,22 +713,22 @@
                 let amts = this.forecastData.amts;
                 return amts.reduce((t, i) => t + i)
             },
-            s() {
+            sPerson() {
                 return (this.person || [])[0]
             },
             pageTitle() {
-                let tag = this.s.empl_class ? ` (${this.s.empl_class})` : '';
-                let name = this.genericName ? `${this.s.name} ${this.s.emplid}` : this.s.name;
+                let tag = this.sPerson.empl_class ? ` (${this.sPerson.empl_class})` : '';
+                let name = this.genericName ? `${this.sPerson.name} ${this.sPerson.emplid}` : this.sPerson.name;
                 return name + tag
             },
             pageSalary() {
                 let start = '';
-                if (this.s.forecast_amt) {
-                    start = `Forecast $${this.s.forecast_amt.toLocaleString()}`
+                if (this.sPerson.forecast_amt) {
+                    start = `Forecast $${this.sPerson.forecast_amt.toLocaleString()}`
                 } else {
-                    start = `$${(this.s.annual_rt || 0).toLocaleString()} /year`
+                    start = `$${(this.sPerson.annual_rt || 0).toLocaleString()} /year`
                 }
-                return start + ` at ${(this.s.fte || 0).toFixed(2)} FTE`
+                return start + ` at ${(this.sPerson.fte || 0).toFixed(2)} FTE`
             },
             totalPercent() {
                 let acct = this.accounts;
@@ -741,15 +742,15 @@
                 }
             },
             genericName() {
-                return ['No Employee', 'Employee Group'].includes(this.s.name)
+                return ['No Employee', 'Employee Group'].includes(this.sPerson.name)
             },
             userCreated() {
                 let personIds = this.$store.state.data.persons.map(item => item.id);
-                let uid = this.s.emplid;
+                let uid = this.sPerson.emplid;
                 return personIds.includes(uid)
             },
             noAccounting() {
-                return this.person.length <= 1 & !this.s.cost_center_reference_id
+                return this.person.length <= 1 & !this.sPerson.cost_center_reference_id
             }
         }
     }

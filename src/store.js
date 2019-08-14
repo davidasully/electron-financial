@@ -33,6 +33,7 @@ export const store = new Vuex.Store({
     state: {
         search: '',
         selected: [],
+        pivotTab: false,
         snackbar: {
             active: false,
             message: '',
@@ -60,6 +61,9 @@ export const store = new Vuex.Store({
             snackSet['btn'] = Object.assign({}, btn.text ? btn : {text: '', to: ''});
             Object.assign(state.snackbar, snackSet)
         },
+        togglePivotTab(state) {
+            state.pivotTab = !state.pivotTab
+        },
         loadBPC(state, payload) {
             state.data.bpc = payload
         },
@@ -80,6 +84,9 @@ export const store = new Vuex.Store({
         }
     },
     actions: {
+        togglePivotTab({commit}) {
+            commit('togglePivotTab')
+        },
         openSnackbar({commit}, payload) {
             commit('openSnackbar', payload)
         },
@@ -383,7 +390,7 @@ export const store = new Vuex.Store({
                     posid: r => r.skey,
                     name: r => r.name || r.position_budget_type,
                     forecast: r => r.q1 + r.q2 + r.q3 + r.q4,
-                    dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * (r.forecast + r.total_original_budget)
+                    dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * (r.forecast + r.total_original_budget) || r.original_budget_personal_services
                 })
                 .orderBy(row => row.name)
                 .toArray()

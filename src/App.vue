@@ -7,7 +7,7 @@
                         clipped-left
                         color="amber"
                 >
-                    <v-icon @click="drawer = !drawer">menu</v-icon>
+<!--                    <v-icon @click="drawer = !drawer">menu</v-icon>-->
                     <span @click="navigateHome"
                           style="cursor: pointer"
                           class="title ml-3 mr-5"
@@ -16,6 +16,12 @@
                     <v-spacer></v-spacer>
 
                     <!--BEGIN ADD NEW FORM -->
+                    <v-btn icon
+                           x-large
+                           @click.prevent="togglePivotTab"
+                    >
+                        <v-icon>table_chart</v-icon>
+                    </v-btn>
                     <v-dialog v-model="dialog" persistent max-width="600px">
                         <template v-slot:activator="{ on }">
                             <v-btn
@@ -195,7 +201,7 @@
 
                     <Tabs></Tabs>
 
-                    <keep-alive include="home">
+                    <keep-alive :include="keepAlive">
                         <router-view></router-view>
                     </keep-alive>
 
@@ -266,6 +272,9 @@
             navigateHome() {
                 this.$router.push('/')
             },
+            togglePivotTab() {
+                this.$store.dispatch('togglePivotTab')
+            },
             submitNew(payload) {
                 if (this.$refs.form.validate()) {
                     payload['type'] = this.default_positions.filter(dp => {
@@ -287,6 +296,14 @@
             },
             snackbar() {
                 return this.$store.state.snackbar
+            },
+            keepAlive() {
+                let keep = ['Home'];
+                let showPivot = this.$store.state.pivotTab;
+                if (showPivot) {
+                    keep.unshift('PivotView')
+                }
+                return keep
             }
         },
         created() {
