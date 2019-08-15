@@ -15,18 +15,24 @@
                 <span class="font-weight-light">Forecast</span></span>
                     <v-spacer></v-spacer>
 
-                    <v-btn icon
-                           x-large
-                           @click.prevent="togglePivotTab"
-                    >
-                        <v-icon>table_chart</v-icon>
-                    </v-btn>
-                    <v-btn icon
-                           x-large
-                           @click.prevent="exportCSV"
-                    >
-                        <v-icon>save</v-icon>
-                    </v-btn>
+                    <v-tooltip bottom>
+                        <template v-slot:activator="{ on }">
+                            <v-btn v-on="on" icon x-large @click.prevent="togglePivotTab">
+                                <v-icon>table_chart</v-icon>
+                            </v-btn>
+                        </template>
+                        <span>{{ `${keepAlive.includes('PivotView') ? 'Close' : 'Open'} pivot tab`}}</span>
+                    </v-tooltip>
+
+                    <v-tooltip bottom>
+                        <template v-slot:activator="{ on }">
+                            <v-btn v-on="on" icon x-large @click.prevent="exportCSV">
+                                <v-icon>save</v-icon>
+                            </v-btn>
+                        </template>
+                        <span>Export data to CSV</span>
+                    </v-tooltip>
+
                     <!--BEGIN ADD NEW FORM -->
                     <v-dialog v-model="dialog" persistent max-width="600px">
                         <template v-slot:activator="{ on }">
@@ -161,7 +167,11 @@
                 <v-footer app>
                     <img :src="require(`@/assets/logo_${isDarkTheme ? 'dark' : 'light'}.png`)" height="60px">
                     <v-spacer></v-spacer>
-                    <v-switch @change="setDarkMode" v-model="darkModeState" label="Lights Out!"></v-switch>
+                    <v-switch @change="setDarkMode"
+                              v-model="darkModeState"
+                              :label="`Lights ${darkModeState ? 'on' : 'out'}`"
+                              color="white"
+                    ></v-switch>
                 </v-footer>
             </div>
         </template>

@@ -140,7 +140,7 @@
                                                                             :key="i"
                                                                     >
                                                                         <v-card height="75" flat
-                                                                                :class="`grey ${isDarkTheme ? 'darken-2' : 'lighten-4'} ${qtr == 0 ? 'pt-3' : 'pt-1'}`">
+                                                                                :class="`accent ${qtr == 0 ? 'pt-3' : 'pt-1'}`">
                                                                             <div class="caption grey--text">
                                                                                 {{`Quarter ${i + 1}`}}
                                                                                 <v-btn x-small
@@ -157,7 +157,7 @@
                                                                     </v-flex>
                                                                     <v-flex xs12>
                                                                         <v-card min-height="75" flat
-                                                                                :class="`grey ${isDarkTheme ? 'darken-2' : 'lighten-4'}`">
+                                                                                class="accent">
                                                                             <v-card-text class="text-left">
                                                                                 <div>{{ forecastData.note }}</div>
                                                                             </v-card-text>
@@ -315,7 +315,7 @@
 
 
                                             <v-card flat v-for="(p, i) in accounts" :key="p.lkey"
-                                                    :class="`grey ${isDarkTheme ? 'darken-2' : 'lighten-4'} mb-2`">
+                                                    class="accent mb-2">
                                                 <v-layout row wrap class="pa-1">
                                                     <v-flex xs6 md4>
                                                         <div class="caption grey--text">Cost Center</div>
@@ -343,7 +343,7 @@
                                                     </v-flex>
                                                     <v-flex xs6 md2>
                                                         <div class="caption grey--text">Forecast Dist</div>
-                                                        <span>{{ p.dist_forecast || 0 }}</span>
+                                                        <span>{{ (p.dist_forecast || 0).toLocaleString() }}</span>
                                                     </v-flex>
                                                 </v-layout>
                                             </v-card>
@@ -681,9 +681,6 @@
             }
         },
         computed: {
-            isDarkTheme() {
-                return this.$vuetify.theme.dark
-            },
             person() {
                 let posid = this.posid.split('-');
                 let uid = posid[0];

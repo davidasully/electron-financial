@@ -90,15 +90,28 @@ export const store = new Vuex.Store({
         openSnackbar({commit}, payload) {
             commit('openSnackbar', payload)
         },
-        loadBPC({commit}) {
+        sqlError({commit}, err) {
+            // eslint-disable-next-line no-console
+            console.error(err);
+            commit('openSnackbar', {
+                message: 'There was a database error.',
+                color: 'error',
+                timeout: 30000,
+                btn: {
+                    text: 'Reload',
+                    to: 'Reload'
+                }
+            })
+        },
+        loadBPC({commit, dispatch}) {
             let table = 'bpc';
             knex.select().table(table)
                 .asCallback((err, rows) => {
-                    if (err) return console.error(err);
+                    if (err) return dispatch('sqlError', err);
                     commit('loadBPC', rows)
                 });
         },
-        loadPersons({commit}) {
+        loadPersons({commit, dispatch}) {
             let table = 'person';
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
@@ -115,12 +128,12 @@ export const store = new Vuex.Store({
                 }
                 knex.select().from(table)
                     .asCallback((err, rows) => {
-                        if (err) return console.error(err);
+                        if (err) return dispatch('sqlError', err);
                         commit('loadPersons', rows)
                     })
             })
         },
-        loadForecasts({commit}) {
+        loadForecasts({commit, dispatch}) {
             let table = 'forecast';
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
@@ -136,12 +149,12 @@ export const store = new Vuex.Store({
                 }
                 knex.select().from(table)
                     .asCallback((err, rows) => {
-                        if (err) return console.error(err);
+                        if (err) return dispatch('sqlError', err);
                         commit('loadForecasts', rows)
                     })
             })
         },
-        loadMappedAccounts({commit}) {
+        loadMappedAccounts({commit, dispatch}) {
             let table = 'account';
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
@@ -158,16 +171,16 @@ export const store = new Vuex.Store({
                 }
                 knex.select().from(table)
                     .asCallback((err, rows) => {
-                        if (err) return console.error(err);
+                        if (err) return dispatch('sqlError', err);
                         commit('loadMappedAccounts', rows)
                     })
             })
         },
-        loadDefaultPositions({commit}) {
+        loadDefaultPositions({commit, dispatch}) {
             let table = 'default_positions';
             knex.select().table(table)
                 .asCallback((err, rows) => {
-                    if (err) return console.error(err);
+                    if (err) return dispatch('sqlError', err);
                     commit('loadDefaultPositions', rows)
                 })
         },
@@ -182,14 +195,14 @@ export const store = new Vuex.Store({
             });
             commit('updateSelected', selected)
         },
-        addPerson({commit}, payload) {
+        addPerson({commit, dispatch}, payload) {
             let table = 'person';
             knex(table).insert(payload)
                 .asCallback((err) => {
-                    if (err) return console.error(err);
+                    if (err) return dispatch('sqlError', err);
                     knex.select().from(table)
                         .asCallback((err, rows) => {
-                            if (err) return console.error(err)
+                            if (err) return dispatch('sqlError', err);
                             commit('loadPersons', rows)
                         })
                 })
@@ -198,7 +211,7 @@ export const store = new Vuex.Store({
             let table = 'person';
             knex(table).where('id', payload).del()
                 .asCallback(err => {
-                    if (err) return console.error(err);
+                    if (err) return dispatch('sqlError', err);
                     dispatch('loadPersons')
                 })
         },
@@ -210,37 +223,36 @@ export const store = new Vuex.Store({
                 .andWhere('quarter', payload.quarter)
                 .del()
                 .asCallback(err => {
-                    if (err) return console.error(err);
+                    if (err) return dispatch('sqlError', err);
                     dispatch('loadForecasts')
                 })
         },
-        addForecast({commit}, payload) {
+        addForecast({commit, dispatch}, payload) {
             let table = 'forecast';
             knex(table).insert(payload)
                 .asCallback((err) => {
-                    if (err) return console.error(err);
+                    if (err) return dispatch('sqlError', err);
                     knex.select().from(table)
                         .asCallback((err, rows) => {
-                            if (err) return console.error(err)
+                            if (err) return dispatch('sqlError', err);
                             commit('loadForecasts', rows)
                         })
                 })
         },
-        addAccountMapping({commit}, payload) {
+        addAccountMapping({commit, dispatch}, payload) {
             let table = 'account';
-            console.log(payload)
             knex(table)
                 .where('uid', payload[0].uid)
                 .andWhere('pid', payload[0].pid)
                 .del()
                 .asCallback(err => {
-                    if (err) return console.error(err);
+                    if (err) return dispatch('sqlError', err);
                     knex(table).insert(payload)
                     .asCallback((err) => {
-                        if (err) return console.error(err);
+                        if (err) return dispatch('sqlError', err);
                         knex.select().from(table)
                             .asCallback((err, rows) => {
-                                if (err) return console.error(err)
+                                if (err) return dispatch('sqlError', err);
                                 commit('loadMappedAccounts', rows)
                             })
                     })

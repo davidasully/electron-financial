@@ -3,8 +3,9 @@ import Router from 'vue-router'
 import Home from './components/Home'
 import Pivot from './components/PivotView'
 import Person from './components/Person'
+import Reload from './components/Reload'
 
-Vue.use(Router)
+Vue.use(Router);
 
 export default new Router({
   mode: 'history',
@@ -27,6 +28,11 @@ export default new Router({
       name: 'person',
       component: Person,
       props: true
+    },
+    {
+      path: '/reload',
+      name: 'reload',
+      component: Reload
     }
   ]
 })
