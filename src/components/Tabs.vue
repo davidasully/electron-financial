@@ -5,12 +5,12 @@
             <v-tabs show-arrows>
                 <v-tab to="/">Home</v-tab>
                 <v-tab to="/pivot" v-if="showPivotTab">Pivot
-                    <v-btn x-small icon text @click.prevent="closePivotTab">
+                    <v-btn color="error"  x-small icon text @click.prevent="closePivotTab">
                             <v-icon small>close</v-icon>
                     </v-btn>
                 </v-tab>
                 <v-tab v-for="tab in tabs" :key="tab.posid" :to="{path: '/person/' + tab.posid}">{{tab.name}}
-                    <v-btn x-small icon text @click.prevent="closeTab(tab.posid)">
+                    <v-btn color="error"  x-small icon text @click.prevent="closeTab(tab.posid)">
                         <v-icon small>close</v-icon>
                     </v-btn>
                 </v-tab>
@@ -37,7 +37,6 @@
                 this.$store.dispatch('removeSelected', object)
             },
             closePivotTab() {
-                this.$router.push('/');
                 this.$store.dispatch('togglePivotTab')
             }
         }

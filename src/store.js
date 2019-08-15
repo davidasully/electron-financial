@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import {DataFrame, Series} from 'data-forge';
+import router from './router'
 
 const knex = require('knex')({
     client: 'sqlite3',
@@ -44,6 +45,7 @@ export const store = new Vuex.Store({
                 to: ''
             }
         },
+        overlay: false,
         data: {
             bpc: [],
             trans: [],
@@ -62,22 +64,29 @@ export const store = new Vuex.Store({
             Object.assign(state.snackbar, snackSet)
         },
         togglePivotTab(state) {
-            state.pivotTab = !state.pivotTab
+            state.pivotTab = !state.pivotTab;
+            if (state.pivotTab) router.push('/pivot')
+            if (!state.pivotTab) router.push('/')
         },
         loadBPC(state, payload) {
-            state.data.bpc = payload
+            state.data.bpc = payload;
+            state.overlay = false
         },
         loadDefaultPositions(state, payload) {
             state.data.default_positions = payload
+            state.overlay = false
         },
         loadPersons(state, payload) {
             state.data.persons = payload
+            state.overlay = false
         },
         loadForecasts(state, payload) {
             state.data.forecasts = payload
+            state.overlay = false
         },
         loadMappedAccounts(state, payload) {
             state.data.accounts = payload
+            state.overlay = false
         },
         updateSelected(state, payload) {
             state.selected = payload;
@@ -103,16 +112,18 @@ export const store = new Vuex.Store({
                 }
             })
         },
-        loadBPC({commit, dispatch}) {
+        loadBPC({commit, dispatch, state}) {
             let table = 'bpc';
+            state.overlay = true;
             knex.select().table(table)
                 .asCallback((err, rows) => {
                     if (err) return dispatch('sqlError', err);
                     commit('loadBPC', rows)
                 });
         },
-        loadPersons({commit, dispatch}) {
+        loadPersons({commit, dispatch, state}) {
             let table = 'person';
+            state.overlay = true;
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
                     return knex.schema.createTable(table, t => {
@@ -133,8 +144,9 @@ export const store = new Vuex.Store({
                     })
             })
         },
-        loadForecasts({commit, dispatch}) {
+        loadForecasts({commit, dispatch, state}) {
             let table = 'forecast';
+            state.overlay = true;
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
                     return knex.schema.createTable(table, t => {
@@ -154,8 +166,9 @@ export const store = new Vuex.Store({
                     })
             })
         },
-        loadMappedAccounts({commit, dispatch}) {
+        loadMappedAccounts({commit, dispatch, state}) {
             let table = 'account';
+            state.overlay = true;
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
                     return knex.schema.createTable(table, t => {
@@ -176,8 +189,9 @@ export const store = new Vuex.Store({
                     })
             })
         },
-        loadDefaultPositions({commit, dispatch}) {
+        loadDefaultPositions({commit, dispatch, state}) {
             let table = 'default_positions';
+            state.overlay = true;
             knex.select().table(table)
                 .asCallback((err, rows) => {
                     if (err) return dispatch('sqlError', err);
@@ -195,11 +209,17 @@ export const store = new Vuex.Store({
             });
             commit('updateSelected', selected)
         },
-        addPerson({commit, dispatch}, payload) {
+        addPerson({commit, dispatch, state}, payload) {
             let table = 'person';
+            state.overlay = true;
             knex(table).insert(payload)
                 .asCallback((err) => {
                     if (err) return dispatch('sqlError', err);
+                    dispatch('openSnackbar', {
+                        message: 'New line added successfully.',
+                        color: 'success',
+                        timeout: 5000
+                    });
                     knex.select().from(table)
                         .asCallback((err, rows) => {
                             if (err) return dispatch('sqlError', err);
@@ -207,16 +227,23 @@ export const store = new Vuex.Store({
                         })
                 })
         },
-        deletePerson({dispatch}, payload) {
+        deletePerson({dispatch, state}, payload) {
             let table = 'person';
+            state.overlay = true;
             knex(table).where('id', payload).del()
                 .asCallback(err => {
                     if (err) return dispatch('sqlError', err);
+                    dispatch('openSnackbar', {
+                        message: 'Line deleted successfully.',
+                        color: 'success',
+                        timeout: 5000
+                    });
                     dispatch('loadPersons')
                 })
         },
-        deleteForecast({dispatch}, payload) {
+        deleteForecast({dispatch, state}, payload) {
             let table = 'forecast';
+            state.overlay = true;
             knex(table)
                 .where('uid', payload.uid)
                 .andWhere('pid', payload.pid)
@@ -224,23 +251,35 @@ export const store = new Vuex.Store({
                 .del()
                 .asCallback(err => {
                     if (err) return dispatch('sqlError', err);
+                    dispatch('openSnackbar', {
+                        message: 'Forecast deleted successfully.',
+                        color: 'success',
+                        timeout: 5000
+                    });
                     dispatch('loadForecasts')
                 })
         },
-        addForecast({commit, dispatch}, payload) {
+        addForecast({commit, dispatch, state}, payload) {
             let table = 'forecast';
+            state.overlay = true;
             knex(table).insert(payload)
                 .asCallback((err) => {
                     if (err) return dispatch('sqlError', err);
                     knex.select().from(table)
                         .asCallback((err, rows) => {
                             if (err) return dispatch('sqlError', err);
+                            dispatch('openSnackbar', {
+                                message: 'Forecast added successfully.',
+                                color: 'success',
+                                timeout: 5000
+                            });
                             commit('loadForecasts', rows)
                         })
                 })
         },
-        addAccountMapping({commit, dispatch}, payload) {
+        addAccountMapping({commit, dispatch, state}, payload) {
             let table = 'account';
+            state.overlay = true;
             knex(table)
                 .where('uid', payload[0].uid)
                 .andWhere('pid', payload[0].pid)
@@ -248,18 +287,35 @@ export const store = new Vuex.Store({
                 .asCallback(err => {
                     if (err) return dispatch('sqlError', err);
                     knex(table).insert(payload)
-                    .asCallback((err) => {
-                        if (err) return dispatch('sqlError', err);
-                        knex.select().from(table)
-                            .asCallback((err, rows) => {
-                                if (err) return dispatch('sqlError', err);
-                                commit('loadMappedAccounts', rows)
-                            })
-                    })
+                        .asCallback((err) => {
+                            if (err) return dispatch('sqlError', err);
+                            dispatch('openSnackbar', {
+                                message: 'Account mapping added successfully.',
+                                color: 'success',
+                                timeout: 5000
+                            });
+                            knex.select().from(table)
+                                .asCallback((err, rows) => {
+                                    if (err) return dispatch('sqlError', err);
+                                    commit('loadMappedAccounts', rows)
+                                })
+                        })
                 })
         }
     },
     getters: {
+        ccDescr(state) {
+            return new DataFrame(state.data.bpc)
+                .subset(['cost_center_reference_id', 'cost_center_name'])
+                .distinct(row => row.cost_center_reference_id)
+                .toArray()
+        },
+        wd2Descr(state) {
+            return new DataFrame(state.data.bpc)
+                .subset(['wd2_cd', 'wd2_name'])
+                .distinct(row => row.wd2_cd)
+                .toArray()
+        },
         forecasts(state) {
             let forecast = state.data.forecasts.map(i => {
                 i['skey'] = i.uid + '-' + i.pid;
@@ -342,6 +398,8 @@ export const store = new Vuex.Store({
 
                     let bpcDF = new DataFrame(bpc);
                     let accts = new DataFrame(newAccounts);
+                    let ccDescr = new DataFrame(getters.ccDescr);
+                    let wd2Descr = new DataFrame(getters.wd2Descr)
                     let newRows = bpcDF.distinct(row => row.skey)
                         .subset(columns)
                         .join(
@@ -357,6 +415,26 @@ export const store = new Vuex.Store({
                                     cost_center_reference_id: right.cost_center_reference_id, wd2_cd: right.wd2_cd,
                                     jobcode_descr: left.jobcode_descr, lkey: right.lkey, skey: right.skey
                                 }
+                            }
+                        )
+                        .joinOuterLeft(
+                            ccDescr,
+                            left => left.cost_center_reference_id,
+                            right => right.cost_center_reference_id,
+                            (left, right) => {
+                                let newLeft = Object.assign({}, left);
+                                newLeft['cost_center_name'] = Object.assign({}, right).cost_center_name;
+                                return newLeft
+                            }
+                        )
+                        .joinOuterLeft(
+                            wd2Descr,
+                            left => left.wd2_cd,
+                            right => right.wd2_cd,
+                            (left, right) => {
+                                let newLeft = Object.assign({}, left);
+                                newLeft['wd2_name'] = Object.assign({}, right).wd2_name;
+                                return newLeft
                             }
                         )
                         .toArray();

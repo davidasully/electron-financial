@@ -29,8 +29,7 @@
                                         <v-card-title class="headline">Are you sure?</v-card-title>
                                         <v-card-text>
                                             {{`This action will permanently delete ${sPerson.name} (ID:
-                                            ${sPerson.emplid}) and
-                                            associated account distributions.`}}
+                                            ${sPerson.emplid})`}}
                                         </v-card-text>
                                         <v-card-actions>
                                             <v-spacer></v-spacer>
@@ -75,13 +74,11 @@
                     <v-flex class="mt-2">
 
                         <!--Begin account mapping form-->
-                        <v-btn @click.stop="openAccountDialog" color="primary">{{(noAccounting ? 'Create ' : 'Modify ')
-                            + 'Accounting'}}
-                        </v-btn>
+                        <v-btn @click.stop="openAccountDialog" depressed color="primary">Accounts</v-btn>
 
                         <v-dialog v-model="forecastDialog" persistent max-width="600px">
                             <template v-slot:activator="{ on }">
-                                <v-btn v-on="on" color="primary" class="ml-2">Forecast Input</v-btn>
+                                <v-btn v-on="on" depressed color="primary" class="ml-2">Forecast</v-btn>
                             </template>
                             <v-form ref="form">
                                 <v-card>
@@ -200,7 +197,7 @@
                                         <v-spacer></v-spacer>
                                         <v-btn color="error" text @click="forecastDialog = !forecastDialog">Close
                                         </v-btn>
-                                        <v-btn color="primary" @click.stop="submitForecast()">Submit</v-btn>
+                                        <v-btn color="primary" depressed @click.stop="submitForecast()">Submit</v-btn>
                                     </v-card-actions>
                                 </v-card>
                             </v-form>
@@ -248,6 +245,7 @@
                                                             <v-flex xs12>
                                                                 <v-btn
                                                                         class="px-1"
+                                                                        depressed
                                                                         color="primary"
                                                                         @click.stop="saveSelectedEdit"
                                                                 >
@@ -273,34 +271,37 @@
                                                             <v-layout align-space-around justify-space-around row
                                                                       fill-height class="mx-3">
                                                                 <v-flex xs6 class="mb-n3">
-                                                                    <v-text-field
+                                                                    <v-combobox
                                                                             label="Cost Center"
                                                                             v-model="newCostCenter"
+                                                                            :items="costCenter"
                                                                             autofocus
                                                                             outlined
                                                                             :rules="[v => !!v || 'Cost Center required']"
                                                                             required
-                                                                    ></v-text-field>
+                                                                    ></v-combobox>
                                                                 </v-flex>
                                                                 <v-flex xs6 class="mb-n3">
-                                                                    <v-text-field
+                                                                    <v-combobox
                                                                             label="Program/Grant"
                                                                             v-model="newWd2Cd"
+                                                                            :items="wd2"
                                                                             outlined
                                                                             :rules="[v => !!v || 'Program/Grant required']"
                                                                             required
-                                                                    ></v-text-field>
+                                                                    ></v-combobox>
                                                                 </v-flex>
                                                                 <v-flex>
                                                                     <v-layout class="mt-3">
                                                                         <v-spacer></v-spacer>
-                                                                        <v-btn color="error" text
+                                                                        <v-btn color="error" text class="mr-2"
                                                                                @click="showAddAccount = false">
                                                                             Close
                                                                         </v-btn>
                                                                         <v-btn
                                                                                 class="px-1"
                                                                                 color="primary"
+                                                                                depressed
                                                                                 @click.stop="addAccount"
                                                                         >
                                                                             Add Account
@@ -355,7 +356,7 @@
                                         <v-btn color="error" text @click="accountMappingDialog = !accountMappingDialog">
                                             Close
                                         </v-btn>
-                                        <v-btn color="primary" @click.stop="submitAccountMapping">
+                                        <v-btn depressed color="primary" @click.stop="submitAccountMapping">
                                             Submit
                                         </v-btn>
                                     </v-card-actions>
@@ -686,7 +687,7 @@
                 let uid = posid[0];
                 let pid = posid[1];
                 return this.$store.getters.combinedBPC.filter(item => {
-                    return item.position_nbr == pid & item.emplid == uid
+                    return item.position_nbr === pid & item.emplid === uid
                 })
                     .sort((a, b) => (a.total_committed_personal_services > b.total_committed_personal_services) ? 1 : -1)
             },
@@ -715,6 +716,12 @@
             },
             sPerson() {
                 return (this.person || [])[0]
+            },
+            costCenter() {
+                return this.$store.getters.ccDescr.map(i => i.cost_center_reference_id)
+            },
+            wd2() {
+                return this.$store.getters.wd2Descr.map(i => i.wd2_cd)
             },
             pageTitle() {
                 let tag = this.sPerson.empl_class ? ` (${this.sPerson.empl_class})` : '';

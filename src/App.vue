@@ -55,8 +55,8 @@
                                         <v-layout wrap>
                                             <v-flex xs12 md5>
                                                 <v-radio-group row v-model="positionType">
-                                                    <v-radio label="Summary" value="S"></v-radio>
-                                                    <v-radio label="New" value="N"></v-radio>
+                                                    <v-radio label="Summary" value="S" color="primary"></v-radio>
+                                                    <v-radio label="New" value="N" color="primary"></v-radio>
                                                 </v-radio-group>
                                             </v-flex>
                                             <v-flex xs12 md7>
@@ -157,6 +157,10 @@
                         <v-btn v-if="snackbar.btn.text" text :to="snackbar.btn.to">{{snackbar.btn.text}}</v-btn>
                     </v-snackbar>
 
+                    <v-overlay :value="overlay">
+                        <v-progress-circular indeterminate size="64"></v-progress-circular>
+                    </v-overlay>
+
                     <Tabs></Tabs>
 
                     <keep-alive :include="keepAlive">
@@ -165,12 +169,13 @@
 
                 </v-content>
                 <v-footer app>
-                    <img :src="require(`@/assets/logo_${isDarkTheme ? 'dark' : 'light'}.png`)" height="60px">
+                    <img :src="require(`@/assets/logo_${isDarkTheme ? 'dark' : 'light'}.png`)" height="60px"
+                         alt="ASU Logo">
                     <v-spacer></v-spacer>
                     <v-switch @change="setDarkMode"
                               v-model="darkModeState"
                               :label="`Lights ${darkModeState ? 'on' : 'out'}`"
-                              color="white"
+                              :color="`${darkModeState ? 'error' : 'accent'}`"
                     ></v-switch>
                 </v-footer>
             </div>
@@ -183,7 +188,7 @@
 
     const initialState = () => {
         return {
-            darkModeState: false,
+            darkModeState: true,
             dialog: false,
             search: '',
             positionType: 'N',
@@ -232,8 +237,8 @@
                         return dp.type_name === payload.type
                     })[0].type;
                     // payload['quarter'] = this.$store.state.set.quarter
-                    this.$store.dispatch('addPerson', payload)
-                    this.resetWindow()
+                    this.$store.dispatch('addPerson', payload);
+                    this.resetWindow();
                     this.$refs.form.resetValidation()
                 }
             },
@@ -286,6 +291,9 @@
             },
             isDarkTheme() {
                 return this.$vuetify.theme.dark
+            },
+            overlay() {
+                return this.$store.state.overlay
             }
         },
         created() {
