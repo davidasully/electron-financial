@@ -65,7 +65,7 @@ export const store = new Vuex.Store({
         },
         togglePivotTab(state) {
             state.pivotTab = !state.pivotTab;
-            if (state.pivotTab) router.push('/pivot')
+            if (state.pivotTab) router.push('/pivot');
             if (!state.pivotTab) router.push('/')
         },
         loadBPC(state, payload) {
@@ -73,19 +73,19 @@ export const store = new Vuex.Store({
             state.overlay = false
         },
         loadDefaultPositions(state, payload) {
-            state.data.default_positions = payload
+            state.data.default_positions = payload;
             state.overlay = false
         },
         loadPersons(state, payload) {
-            state.data.persons = payload
+            state.data.persons = payload;
             state.overlay = false
         },
         loadForecasts(state, payload) {
-            state.data.forecasts = payload
+            state.data.forecasts = payload;
             state.overlay = false
         },
         loadMappedAccounts(state, payload) {
-            state.data.accounts = payload
+            state.data.accounts = payload;
             state.overlay = false
         },
         updateSelected(state, payload) {
@@ -99,9 +99,10 @@ export const store = new Vuex.Store({
         openSnackbar({commit}, payload) {
             commit('openSnackbar', payload)
         },
-        sqlError({commit}, err) {
+        sqlError({commit, state}, err) {
             // eslint-disable-next-line no-console
             console.error(err);
+            state.overlay = false;
             commit('openSnackbar', {
                 message: 'There was a database error.',
                 color: 'error',

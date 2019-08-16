@@ -36,7 +36,8 @@
                                             <v-btn color="error" text @click="confirmDeletePersonDialog = false">
                                                 cancel
                                             </v-btn>
-                                            <v-btn color="primary" text @click="deletePerson(sPerson.emplid)">delete</v-btn>
+                                            <v-btn color="primary" text @click="deletePerson(sPerson.emplid)">delete
+                                            </v-btn>
                                         </v-card-actions>
                                     </v-card>
                                 </v-dialog>
@@ -655,10 +656,20 @@
             submitForecast() {
                 if (this.$refs.form.validate()) {
                     let forecast = this.forecast;
+
                     let amt = parseInt(forecast.amt) - this.currentForecastTotal;
                     if (amt === 0) {
                         return this.$store.dispatch('openSnackbar', {
                             message: 'Invalid forecast amount.',
+                            color: 'error',
+                            timeout: 2000
+                        })
+                    }
+                    let existingAmts = this.forecastData.amts;
+                    let isDupe = existingAmts[forecast.quarter.slice(-1)] !== 0;
+                    if (isDupe) {
+                        return this.$store.dispatch('openSnackbar', {
+                            message: 'Duplicate quarter.',
                             color: 'error',
                             timeout: 2000
                         })
