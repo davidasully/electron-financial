@@ -422,13 +422,13 @@
                                 <v-layout v-if="forecastResult.length > 0">
                                     <v-flex xs5 class="text-center">
                                         <div class="caption grey--text">Forecast Mapped</div>
-                                        <div class="title">{{p.fct_dist_pct + '%'}}</div>
+                                        <div class="title">{{(Math.round(p.fct_dist_pct) || 0) + '%'}}</div>
                                     </v-flex>
                                     <v-flex xs2></v-flex>
                                     <v-flex xs5 class="text-center">
                                         <div class="caption grey--text">Forecast Amount</div>
                                         <div class="title">
-                                            {{p.dist_forecast.toLocaleString()}}
+                                            {{(Math.round(p.total_dist_forecast) || 0).toLocaleString()}}
                                         </div>
                                     </v-flex>
                                 </v-layout>
@@ -665,8 +665,7 @@
                             timeout: 2000
                         })
                     }
-                    let existingAmts = this.forecastData.amts;
-                    let isDupe = existingAmts[forecast.quarter.slice(-1)] !== 0;
+                    let isDupe = this.forecastData.amts[forecast.quarter.slice(-1)] !== 0;
                     if (isDupe) {
                         return this.$store.dispatch('openSnackbar', {
                             message: 'Duplicate quarter.',
@@ -701,6 +700,10 @@
                     return item.position_nbr === pid & item.emplid === uid
                 })
                     .sort((a, b) => (a.total_committed_personal_services > b.total_committed_personal_services) ? 1 : -1)
+                    .map(i => {
+                        i['fct_dist_pct'] = i['fct_dist_pct'] || 0;
+                        return i
+                    })
             },
             forecastResult() {
                 return this.$store.getters.forecasts.filter(item => {
@@ -754,9 +757,9 @@
             },
             totalStats() {
                 return {
-                    totalCommited: this.person.map(item => item.total_committed_personal_services).reduce((t, v) => t + v),
-                    totalOrigBudgeted: this.person.map(item => item.original_budget_personal_services).reduce((t, v) => t + v),
-                    totalCurrBudgeted: this.person.map(item => item.current_budget_personal_services).reduce((t, v) => t + v)
+                    totalCommited: this.person.map(item => parseFloat(item.total_committed_personal_services) || 0).reduce((t, v) => t + v),
+                    totalOrigBudgeted: this.person.map(item => parseFloat(item.original_budget_personal_services) || 0).reduce((t, v) => t + v),
+                    totalCurrBudgeted: this.person.map(item => parseFloat(item.current_budget_personal_services) || 0).reduce((t, v) => t + v)
                 }
             },
             genericName() {

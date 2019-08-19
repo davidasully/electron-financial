@@ -45,14 +45,20 @@ export const store = new Vuex.Store({
                 to: ''
             }
         },
-        overlay: false,
         data: {
             bpc: [],
-            trans: [],
             default_positions: [],
             persons: [],
             forecasts: [],
             accounts: []
+        },
+        overlay: false,
+        initialLoad: {
+            bpc: false,
+            default_positions: false,
+            persons: false,
+            forecasts: false,
+            accounts: false
         }
     },
     mutations: {
@@ -70,22 +76,27 @@ export const store = new Vuex.Store({
         },
         loadBPC(state, payload) {
             state.data.bpc = payload;
+            state.initialLoad.bpc = true;
             state.overlay = false
         },
         loadDefaultPositions(state, payload) {
             state.data.default_positions = payload;
+            state.initialLoad.default_positions = true;
             state.overlay = false
         },
         loadPersons(state, payload) {
             state.data.persons = payload;
+            state.initialLoad.persons = true;
             state.overlay = false
         },
         loadForecasts(state, payload) {
             state.data.forecasts = payload;
+            state.initialLoad.forecasts = true;
             state.overlay = false
         },
         loadMappedAccounts(state, payload) {
             state.data.accounts = payload;
+            state.initialLoad.accounts = true;
             state.overlay = false
         },
         updateSelected(state, payload) {
@@ -173,13 +184,13 @@ export const store = new Vuex.Store({
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
                     return knex.schema.createTable(table, t => {
-                        t.unique(['uid', 'pid', 'cost_center_reference_id']);
+                        t.unique(['uid', 'pid', 'cost_center_reference_id', 'wd2_cd']);
                         t.string('uid', 10);
                         t.string('pid', 10);
                         t.string('cost_center_reference_id', 10);
                         t.string('wd2_cd', 10);
                         t.integer('total_original_budget');
-                        t.string('fct_dist_pct', 3);
+                        t.decimal('fct_dist_pct');
                         t.timestamp('created_at').defaultTo(knex.fn.now());
                     })
                 }
@@ -451,7 +462,7 @@ export const store = new Vuex.Store({
                     right => right.lkey,
                     (left, right) => {
                         let newLeft = Object.assign({}, left);
-                        let newRight = Object.assign({}, right)
+                        let newRight = Object.assign({}, right);
                         newLeft['fct_dist_pct'] = newRight.fct_dist_pct;
                         newLeft['total_original_budget'] = newRight.total_original_budget;
                         return newLeft
@@ -476,12 +487,35 @@ export const store = new Vuex.Store({
                 )
                     .toArray()
             }
+            let ereRates = new DataFrame(state.data.default_positions)
+                .subset(['type', 'type_name', 'empl_class', 'ben_elig_flg', 'ere_rt'])
+                .distinct(row => row.empl_class + '-' + row.ben_elig_flg)
+                .generateSeries({
+                    type_name: r => r.type_name.replace('Summary - ', '').replace('New-', '')
+                });
+
             return new DataFrame(bpc)
+                .joinOuterLeft(
+                    ereRates,
+                    left => left.empl_class + '-' + left.ben_elig_flg,
+                    right => right.empl_class + '-' + right.ben_elig_flg,
+                    (left, right) => {
+                        let newLeft = Object.assign({}, left);
+                        let newRight = (({type, type_name, ere_rt}) => ({
+                            type,
+                            type_name,
+                            ere_rt
+                        }))(Object.assign({}, right));
+                        return {...newLeft, ...newRight}
+                    }
+                )
                 .generateSeries({
                     posid: r => r.skey,
                     name: r => r.name || r.position_budget_type,
-                    forecast: r => r.q1 + r.q2 + r.q3 + r.q4,
-                    dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * (r.forecast + r.total_original_budget) || r.original_budget_personal_services
+                    forecast: r => (r.q1 + r.q2 + r.q3 + r.q4) || 0,
+                    dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * r.forecast,
+                    total_dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * (r.forecast + (r.total_original_budget || 0)),
+                    dist_forecast_ere: r => r.dist_forecast * (r.ere_rt || 0)
                 })
                 .orderBy(row => row.name)
                 .toArray()

@@ -35,15 +35,21 @@
 
                     <!--BEGIN ADD NEW FORM -->
                     <v-dialog v-model="dialog" persistent max-width="600px">
-                        <template v-slot:activator="{ on }">
-                            <v-btn
-                                    icon
-                                    x-large
-                                    class="mr-5"
-                                    v-on="on"
-                            >
-                                <v-icon>add_circle</v-icon>
-                            </v-btn>
+                        <template v-slot:activator="{ on: dialog }">
+                            <v-tooltip bottom>
+                                <template v-slot:activator="{ on: tooltip }">
+                                    <v-btn
+                                            icon
+                                            x-large
+                                            class="mr-5"
+                                            v-on="{ ...tooltip, ...dialog }"
+                                    >
+                                        <v-icon>add_circle</v-icon>
+                                    </v-btn>
+                                </template>
+                                <span>Add a line</span>
+                            </v-tooltip>
+
                         </template>
                         <v-form ref="form">
                             <v-card>
@@ -174,7 +180,7 @@
                     <v-spacer></v-spacer>
                     <v-switch @change="setDarkMode"
                               v-model="darkModeState"
-                              :label="`Lights ${darkModeState ? 'on' : 'out'}`"
+                              :label="`Lights ${darkModeState ? 'on' : 'off'}`"
                               :color="`${darkModeState ? 'error' : 'accent'}`"
                     ></v-switch>
                 </v-footer>
@@ -293,7 +299,8 @@
                 return this.$vuetify.theme.dark
             },
             overlay() {
-                return this.$store.state.overlay
+                let initialLoadComplete = Object.values(this.$store.state.initialLoad).every(i => i);
+                return this.$store.state.overlay | !initialLoadComplete
             }
         },
         created() {

@@ -32,7 +32,9 @@
                         <template v-slot:item.annual_rt="{ item }">
                             <span>{{item.annual_rt ? Math.round(item.annual_rt).toLocaleString() : ''}}</span>
                         </template>
-
+                        <template v-slot:item.dist_forecast="{ item }">
+                            <span>{{Math.round(item.dist_forecast).toLocaleString()}}</span>
+                        </template>
                         <template v-slot:item.posid="{ item }">
                             <span @click="openTab(item)" style="cursor: pointer">{{item.posid}}</span>
                         </template>
@@ -44,38 +46,32 @@
 </template>
 
 <script>
-    import {DataFrame} from 'data-forge';
+    import {DataFrame, Series} from 'data-forge';
+
+    const columns = ['posid', 'name', 'jobcode_descr', 'deptid', 'empl_class', 'fte', 'annual_rt'];
 
     export default {
-        name: 'home',
-        data() {
-            return {
-                columns: [
-                    'posid', 'name', 'jobcode_descr', 'deptid',
-                    'empl_class', 'fte', 'annual_rt',
-                ]
-            }
-        },
+        name: 'Home',
         mounted() {
             setTimeout(() => {
                 if (this.bpc.length === 0) {
                     this.$forceUpdate()
                 }
-            }, 1)
+            }, 10000)
         },
         computed: {
             bpc() {
                 return new DataFrame(this.$store.getters.combinedBPC)
-                    .distinct(r => r.posid)
-                    .subset(this.columns)
+                    .pivot(columns, 'dist_forecast', Series.sum)
+                    .orderBy(row => row.name)
                     .toArray()
             },
             bpcHeaders() {
-                return this.columns.map(name => {
+                let cols = [...columns, 'dist_forecast']
+                return cols.map(name => {
                     return {
                         text: name.replace(/_/g, " ").toUpperCase(),
-                        value: name,
-                        sortable: name != 'fte' & name != 'annual_rt'
+                        value: name
                     }
                 })
             },

@@ -23,7 +23,7 @@
         data() {
             return {
                 setup: {
-                    data: this.$store.state.data.bpc,
+                    data: this.$store.getters.combinedBPC,
                     cols: ['account_type'],
                     rows: ['cost_center_name'],
                     vals: ['expense_actuals_personal_services'],

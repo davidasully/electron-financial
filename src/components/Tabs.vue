@@ -25,7 +25,11 @@
         name: "Tabs",
         computed: {
             tabs() {
-                return this.$store.getters.tabs
+                return this.$store.getters.tabs.map(i => {
+                    let name = i['name'];
+                    i['name'] = name.length > 37 ? name.substring(0, 30) + '...' + name.slice(-8): name;
+                    return i
+                })
             },
             showPivotTab() {
                 return this.$store.state.pivotTab
