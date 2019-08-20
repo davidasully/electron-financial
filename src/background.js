@@ -1,6 +1,7 @@
 'use strict'
 
 import {app, protocol, BrowserWindow} from 'electron'
+const {autoUpdater} = require("electron-updater");
 import {
     createProtocol,
     installVueDevtools
@@ -68,7 +69,8 @@ app.on('ready', async () => {
             console.error('Vue Devtools failed to install:', e.toString())
         }
     }
-    createWindow()
+    createWindow();
+    await autoUpdater.checkForUpdatesAndNotify()
 })
 
 // Exit cleanly on request from parent process in development mode.
