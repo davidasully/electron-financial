@@ -30,10 +30,19 @@
                             <span>{{item.fte ? item.fte.toFixed(2) : ''}}</span>
                         </template>
                         <template v-slot:item.annual_rt="{ item }">
-                            <span>{{item.annual_rt ? Math.round(item.annual_rt).toLocaleString() : ''}}</span>
+                            <v-layout justify-center>
+                                <span>{{item.annual_rt ? Math.round(item.annual_rt).toLocaleString() : ''}}</span>
+                            </v-layout>
                         </template>
                         <template v-slot:item.dist_forecast="{ item }">
-                            <span>{{Math.round(item.dist_forecast).toLocaleString()}}</span>
+                            <v-layout justify-center>
+                                <span>{{Math.round(item.dist_forecast).toLocaleString()}}</span>
+                            </v-layout>
+                        </template>
+                        <template v-slot:item.original_budget="{ item }">
+                            <v-layout justify-center>
+                                <span>{{item.original_budget.toLocaleString()}}</span>
+                            </v-layout>
                         </template>
                         <template v-slot:item.posid="{ item }">
                             <span @click="openTab(item)" style="cursor: pointer">{{item.posid}}</span>
@@ -46,7 +55,7 @@
 </template>
 
 <script>
-    import {DataFrame, Series} from 'data-forge';
+    import {DataFrame} from 'data-forge';
 
     const columns = ['posid', 'name', 'jobcode_descr', 'deptid', 'empl_class', 'fte', 'annual_rt'];
 
@@ -62,12 +71,17 @@
         computed: {
             bpc() {
                 return new DataFrame(this.$store.getters.combinedBPC)
-                    .pivot(columns, 'dist_forecast', Series.sum)
+                    .pivot(columns, {
+                        original_budget_personal_services: {
+                            original_budget: series => series.sum()
+                        },
+                        dist_forecast: series => series.sum(),
+                    })
                     .orderBy(row => row.name)
                     .toArray()
             },
             bpcHeaders() {
-                let cols = [...columns, 'dist_forecast']
+                let cols = [...columns, 'original_budget', 'dist_forecast']
                 return cols.map(name => {
                     return {
                         text: name.replace(/_/g, " ").toUpperCase(),

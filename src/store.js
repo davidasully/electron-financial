@@ -509,13 +509,32 @@ export const store = new Vuex.Store({
                         return {...newLeft, ...newRight}
                     }
                 )
+                .joinOuterLeft(
+                    ereRates,
+                    left => left.position_nbr,
+                    right => right.type,
+                    (left, right) => {
+                        let newLeft = Object.assign({}, left);
+                        if (!newLeft['type']) {
+                            let newRight = (({type, type_name, ere_rt}) => ({
+                                type,
+                                type_name,
+                                ere_rt
+                            }))(Object.assign({}, right));
+                            return {...newLeft, ...newRight}
+                        }
+                        return newLeft
+                    }
+                )
                 .generateSeries({
                     posid: r => r.skey,
                     name: r => r.name || r.position_budget_type,
+                    jobcode_descr: r => r.jobcode_descr === 'NA' && !r.type ? r.type_name : r.jobcode_descr,
                     forecast: r => (r.q1 + r.q2 + r.q3 + r.q4) || 0,
                     dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * r.forecast,
                     total_dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * (r.forecast + (r.total_original_budget || 0)),
-                    dist_forecast_ere: r => r.dist_forecast * (r.ere_rt || 0)
+                    current_forecast: r => r.total_dist_forecast || (r.original_budget_personal_services || 0),
+                    dist_forecast_ere: r => r.current_forecast * (r.ere_rt || 0)
                 })
                 .orderBy(row => row.name)
                 .toArray()
