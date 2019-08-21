@@ -1,5 +1,6 @@
 {
   "name": "electron-financial",
+  "productName": "CHS Forecast",
   "description": "An app for budgeting personal services",
   "author": {
     "name": "David Sullivan",
@@ -12,6 +13,7 @@
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "electron:publish": "vue-cli-service electron:build  -p always",
+    "electron:build": "vue-cli-service electron:build",
     "electron:serve": "vue-cli-service electron:serve",
     "postinstall": "electron-builder install-app-deps",
     "postuninstall": "electron-builder install-app-deps"
@@ -21,7 +23,7 @@
     "core-js": "^2.6.5",
     "data-forge": "^1.7.2",
     "data-forge-fs": "0.0.7",
-    "electron-updater": "^4.1.2",
+    "electron-updater": "^3.2.3",
     "jquery": "^3.4.1",
     "jquery-ui": "^1.12.1",
     "knex": "^0.19.1",
@@ -38,6 +40,7 @@
     "@vue/cli-service": "^3.9.0",
     "babel-eslint": "^10.0.1",
     "electron": "^5.0.0",
+    "electron-log": "^3.0.7",
     "eslint": "^5.16.0",
     "eslint-plugin-vue": "^5.0.0",
     "sass": "^1.22.7",
