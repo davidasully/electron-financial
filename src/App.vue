@@ -162,7 +162,7 @@
                         <v-btn v-if="snackbar.btn.text" text :to="snackbar.btn.to">{{snackbar.btn.text}}</v-btn>
                     </v-snackbar>
 
-                    <v-overlay :value="overlay">
+                    <v-overlay absolute :value="overlay" class="mt-n6 ml-3">
                         <v-progress-circular indeterminate size="64"></v-progress-circular>
                     </v-overlay>
 
@@ -316,6 +316,9 @@
             this.$store.dispatch('loadForecasts');
             this.$store.dispatch('loadMappedAccounts');
             this.$store.dispatch('loadDefaultPositions');
+        },
+        mounted() {
+            this.$router.push('/')
         }
     }
 </script>

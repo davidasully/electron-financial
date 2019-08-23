@@ -1,16 +1,22 @@
 <template>
     <div class="home">
-
         <v-container
                 fluid
                 fill-height
-                class="mt-1"
         >
             <v-layout
                     justify-center
                     align-center
+                    wrap
             >
-                <v-flex child-flex>
+                <v-flex xs12>
+                    <v-switch
+                            :label="`${opsOnly ? 'Operational' : 'All'} Accounts`"
+                            class="ma-0"
+                            v-model="opsOnly"
+                    ></v-switch>
+                </v-flex>
+                <v-flex child-flex xs12>
                     <v-data-table
                             v-if="this.bpc.length > 0"
                             :headers="bpcHeaders"
@@ -19,7 +25,7 @@
                             :search="search"
                             item-key="posid"
                             show-select
-                            class="elevation-1"
+                            class="mt-n2"
                     >
                         <template v-slot:item.empl_class="{ item }">
                             <v-layout justify-center>
@@ -44,6 +50,11 @@
                                 <span>{{item.original_budget.toLocaleString()}}</span>
                             </v-layout>
                         </template>
+                        <template v-slot:item.total_committed="{ item }">
+                            <v-layout justify-center>
+                                <span>{{Math.round(item.total_committed).toLocaleString()}}</span>
+                            </v-layout>
+                        </template>
                         <template v-slot:item.posid="{ item }">
                             <span @click="openTab(item)" style="cursor: pointer">{{item.posid}}</span>
                         </template>
@@ -61,6 +72,11 @@
 
     export default {
         name: 'Home',
+        data() {
+            return {
+                opsOnly: false
+            }
+        },
         mounted() {
             setTimeout(() => {
                 if (this.bpc.length === 0) {
@@ -71,9 +87,15 @@
         computed: {
             bpc() {
                 return new DataFrame(this.$store.getters.combinedBPC)
+                    .where(row => {
+                        return this.opsOnly ? row.account_type === 'Operational' : true
+                    })
                     .pivot(columns, {
                         original_budget_personal_services: {
                             original_budget: series => series.sum()
+                        },
+                        total_committed_personal_services: {
+                            total_committed: series => series.sum()
                         },
                         dist_forecast: series => series.sum(),
                     })
@@ -81,7 +103,7 @@
                     .toArray()
             },
             bpcHeaders() {
-                let cols = [...columns, 'original_budget', 'dist_forecast']
+                let cols = [...columns, 'original_budget', 'total_committed', 'dist_forecast'];
                 return cols.map(name => {
                     return {
                         text: name.replace(/_/g, " ").toUpperCase(),
@@ -95,10 +117,10 @@
         },
         methods: {
             openTab(object) {
-                let curr_state = this.$store.state.selected
+                let curr_state = this.$store.state.selected;
                 let look_in_state = curr_state.filter(item => {
                     return item.posid === object.posid
-                })
+                });
                 if (look_in_state.length === 0) {
                     this.$store.dispatch('addSelected', object)
                 }

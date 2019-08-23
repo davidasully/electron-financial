@@ -324,7 +324,7 @@ export const store = new Vuex.Store({
         },
         wd2Descr(state) {
             return new DataFrame(state.data.bpc)
-                .subset(['wd2_cd', 'wd2_name'])
+                .subset(['wd2_cd', 'wd2_name', 'account_type', 'account_type_detail'])
                 .distinct(row => row.wd2_cd)
                 .toArray()
         },
@@ -445,7 +445,10 @@ export const store = new Vuex.Store({
                             right => right.wd2_cd,
                             (left, right) => {
                                 let newLeft = Object.assign({}, left);
-                                newLeft['wd2_name'] = Object.assign({}, right).wd2_name;
+                                let newRight = Object.assign({}, right);
+                                newLeft['wd2_name'] = newRight.wd2_name;
+                                newLeft['account_type'] = newRight.account_type;
+                                newLeft['account_type_detail'] = newRight.account_type_detail;
                                 return newLeft
                             }
                         )

@@ -132,7 +132,7 @@
                                                         </v-flex>
                                                         <v-expand-transition>
                                                             <v-flex xs12 v-show="showForecastDetail">
-                                                                <v-layout row align-center>
+                                                                <v-layout row wrap align-center>
                                                                     <v-flex xs3
                                                                             v-for="(qtr, i) in forecastData.amts.slice(1,5)"
                                                                             :key="i"
@@ -232,7 +232,7 @@
                                             >
                                                 <v-card flat max-width="115">
                                                     <v-container>
-                                                        <v-layout align-space-around justify-space-around row
+                                                        <v-layout align-space-around justify-space-around row wrap
                                                                   fill-height class="mx-3">
                                                             <v-flex xs12 class="mb-n3">
                                                                 <v-text-field
