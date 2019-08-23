@@ -2,22 +2,34 @@
     <v-app>
         <template>
             <div class="home">
-                <v-app-bar
-                        app
-                        clipped-left
-                        :class="{'grey darken-2': isDarkTheme, amber: !isDarkTheme}"
+                <v-app-bar flat app height="20" :class="{'grey darken-3': isDarkTheme, amber: !isDarkTheme, titlebar: true, 'mr-n3': true}">
+                    <v-spacer></v-spacer>
+                    <v-btn x-small text @click.prevent="windowMin" class="pt-2 titlebar-btns">
+                        <v-icon small>maximize</v-icon>
+                    </v-btn>
+                    <v-btn x-small text @click.prevent="windowSize" class="titlebar-btns">
+                        <v-icon v-if="!windowMax" small>fullscreen</v-icon>
+                        <v-icon v-if="windowMax" small>fullscreen_exit</v-icon>
+                    </v-btn>
+                    <v-btn x-small text @click.prevent="windowClose" class="titlebar-btns">
+                        <v-icon small>close</v-icon>
+                    </v-btn>
+                </v-app-bar>
+                <v-toolbar flat height="65"
+                           :class="{'grey darken-3': isDarkTheme, amber: !isDarkTheme, titlebar: true, 'mt-3': true, 'mb-1': true}"
                 >
                     <!--                    <v-icon @click="drawer = !drawer">menu</v-icon>-->
                     <span @click="navigateHome"
                           style="cursor: pointer"
-                          class="title ml-3 mr-5"
-                    >Business Solutions
+                          class="title ml-3 mr-5 titlebar-btns"
+                    >Health Solutions
                 <span class="font-weight-light">Forecast</span></span>
                     <v-spacer></v-spacer>
 
                     <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                            <v-btn v-on="on" icon x-large @click.prevent="togglePivotTab">
+                            <v-btn v-on="on" icon x-large @click.prevent="togglePivotTab"
+                                   class="titlebar-btns">
                                 <v-icon>table_chart</v-icon>
                             </v-btn>
                         </template>
@@ -26,7 +38,8 @@
 
                     <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                            <v-btn v-on="on" icon x-large @click.prevent="exportCSV">
+                            <v-btn v-on="on" icon x-large @click.prevent="exportCSV"
+                                   class="titlebar-btns">
                                 <v-icon>save</v-icon>
                             </v-btn>
                         </template>
@@ -41,7 +54,7 @@
                                     <v-btn
                                             icon
                                             x-large
-                                            class="mr-5"
+                                            class="mr-5 titlebar-btns"
                                             v-on="{ ...tooltip, ...dialog }"
                                     >
                                         <v-icon>add_circle</v-icon>
@@ -146,13 +159,13 @@
                             prepend-inner-icon="search"
                             v-model="search"
                             @keyup="updateSearch()"
+                            class="titlebar-btns mr-n3"
                     ></v-text-field>
 
-                </v-app-bar>
+                </v-toolbar>
 
 
                 <v-content>
-
                     <v-snackbar
                             top right
                             v-model="snackbar.active"
@@ -167,23 +180,26 @@
                         <v-progress-circular indeterminate size="64"></v-progress-circular>
                     </v-overlay>
 
-                    <Tabs></Tabs>
+                    <Tabs class="mt-n7"></Tabs>
 
                     <keep-alive :include="keepAlive">
                         <router-view></router-view>
                     </keep-alive>
 
                 </v-content>
-                <v-footer app>
-                    <img :src="require(`@/assets/logo_${isDarkTheme ? 'dark' : 'light'}.png`)" height="60px"
-                         alt="ASU Logo">
-                    <v-spacer></v-spacer>
-                    <v-switch @change="setDarkMode"
-                              v-model="darkModeState"
-                              :label="`Lights ${darkModeState ? 'on' : 'off'}`"
-                              :color="`${darkModeState ? 'error' : 'accent'}`"
-                    ></v-switch>
-                </v-footer>
+                <v-expand-transition>
+                    <v-footer padless v-if="false" app v-show="!scrolled" class="pr-3">
+                        <img :src="require(`@/assets/logo_${isDarkTheme ? 'dark' : 'light'}.png`)" height="60px"
+                             alt="ASU Logo">
+                        <v-spacer></v-spacer>
+                        <v-switch @change="setDarkMode"
+                                  v-model="darkModeState"
+                                  :label="`Lights ${darkModeState ? 'on' : 'off'}`"
+                                  :color="`${darkModeState ? 'error' : 'accent'}`"
+                        ></v-switch>
+                    </v-footer>
+                </v-expand-transition>
+
             </div>
         </template>
     </v-app>
@@ -191,10 +207,13 @@
 
 <script>
     import Tabs from '@/components/Tabs'
+    import {remote} from 'electron'
 
     const initialState = () => {
         return {
             darkModeState: true,
+            windowMax: false,
+            scrolled: false,
             dialog: false,
             search: '',
             positionType: 'N',
@@ -223,6 +242,27 @@
             },
             resetWindow() {
                 Object.assign(this.$data, initialState())
+            },
+            windowClose() {
+                let window = remote.getCurrentWindow();
+                window.close()
+            },
+            windowMin() {
+                let window = remote.getCurrentWindow();
+                window.minimize()
+            },
+            windowSize() {
+                let window = remote.getCurrentWindow();
+                if (!window.isMaximized()) {
+                    window.maximize();
+                    this.windowMax = true
+                } else {
+                    window.unmaximize()
+                    this.windowMax = false
+                }
+            },
+            handleScroll() {
+                this.scrolled = window.scrollY > 0
             },
             closeDialog() {
                 this.dialog = false;
@@ -311,5 +351,30 @@
             this.$store.dispatch('loadMappedAccounts');
             this.$store.dispatch('loadDefaultPositions');
         },
+        beforeMount() {
+            window.addEventListener('scroll', this.handleScroll);
+        },
+        beforeDestroy() {
+            window.removeEventListener('scroll', this.handleScroll);
+        }
     }
 </script>
+<style>
+    .titlebar {
+        -webkit-app-region: drag;
+    }
+    .titlebar-btns {
+        -webkit-app-region: no-drag;
+        -webkit-user-select: none;
+    }
+    ::-webkit-scrollbar {
+        width: 12px; /* for vertical scrollbars */
+        height: 12px; /* for horizontal scrollbars */
+    }
+    ::-webkit-scrollbar-track {
+        background: #424242;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #212121;
+    }
+</style>

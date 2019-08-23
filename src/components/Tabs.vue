@@ -1,8 +1,8 @@
 <template>
     <div app class="tabs">
         <v-expand-transition>
-                    <v-card v-show="tabs.length > 0 | showPivotTab">
-            <v-tabs show-arrows>
+                    <v-card flat v-show="tabs.length > 0 | showPivotTab" class="square-card">
+            <v-tabs show-arrows height="35">
                 <v-tab to="/">Home</v-tab>
                 <v-tab to="/pivot" v-if="showPivotTab">Pivot
                     <v-btn color="error"  x-small icon text @click.prevent="closePivotTab">
@@ -50,5 +50,8 @@
 <style scoped>
     .v-btn:hover:before {
         background-color: transparent;
+    }
+    .square-card {
+        border-radius: 0px;
     }
 </style>

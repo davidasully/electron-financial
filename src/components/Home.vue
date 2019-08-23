@@ -4,13 +4,13 @@
         <v-container
                 fluid
                 fill-height
-                class="my-5"
+                class="mt-1"
         >
             <v-layout
                     justify-center
                     align-center
             >
-                <v-flex shrink>
+                <v-flex child-flex>
                     <v-data-table
                             v-if="this.bpc.length > 0"
                             :headers="bpcHeaders"

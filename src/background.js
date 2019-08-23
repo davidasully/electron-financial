@@ -20,7 +20,7 @@ protocol.registerSchemesAsPrivileged([{scheme: 'app', privileges: {secure: true,
 function createWindow() {
     // Create the browser window.
     win = new BrowserWindow({
-        width: 1700, height: 1000, webPreferences: {
+        width: 1700, height: 1000, frame: false, webPreferences: {
             nodeIntegration: true
         }
     })
@@ -38,7 +38,7 @@ function createWindow() {
     win.on('closed', () => {
         win = null
     })
-    // win.setMenu(null);
+    win.setMenu(null);
 }
 
 // Quit when all windows are closed.
@@ -87,14 +87,6 @@ if (isDevelopment) {
         })
     }
 }
-
-autoUpdater.setFeedURL({
-    provider: 'github',
-    repo: 'electron-financial',
-    owner: 'davidasully',
-    private: true,
-    token: process.env.GH_TOKEN
-})
 
 autoUpdater.logger = log;
 autoUpdater.logger.transports.file.level = 'info';
