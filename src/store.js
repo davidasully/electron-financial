@@ -52,14 +52,7 @@ export const store = new Vuex.Store({
             forecasts: [],
             accounts: []
         },
-        overlay: false,
-        initialLoad: {
-            bpc: false,
-            default_positions: false,
-            persons: false,
-            forecasts: false,
-            accounts: false
-        }
+        loading: {}
     },
     mutations: {
         openSnackbar(state, payload) {
@@ -74,30 +67,28 @@ export const store = new Vuex.Store({
             if (state.pivotTab) router.push('/pivot');
             if (!state.pivotTab) router.push('/')
         },
+        updateLoading(state, payload) {
+            state.loading = Object.assign({}, payload)
+        },
         loadBPC(state, payload) {
             state.data.bpc = payload;
-            state.initialLoad.bpc = true;
-            state.overlay = false
+            state.loading['bpc'] = false
         },
         loadDefaultPositions(state, payload) {
             state.data.default_positions = payload;
-            state.initialLoad.default_positions = true;
-            state.overlay = false
+            state.loading['default_positions'] = false
         },
         loadPersons(state, payload) {
             state.data.persons = payload;
-            state.initialLoad.persons = true;
-            state.overlay = false
+            state.loading['persons'] = false
         },
         loadForecasts(state, payload) {
             state.data.forecasts = payload;
-            state.initialLoad.forecasts = true;
-            state.overlay = false
+            state.loading['forecasts'] = false
         },
         loadMappedAccounts(state, payload) {
             state.data.accounts = payload;
-            state.initialLoad.accounts = true;
-            state.overlay = false
+            state.loading['accounts'] = false
         },
         updateSelected(state, payload) {
             state.selected = payload;
@@ -110,10 +101,19 @@ export const store = new Vuex.Store({
         openSnackbar({commit}, payload) {
             commit('openSnackbar', payload)
         },
-        sqlError({commit, state}, err) {
+        updateLoading({commit, state}, payload) {
+            let loading = Object.assign({}, state.loading);
+            loading[payload.source] = payload.value;
+            commit('updateLoading', loading)
+        },
+        sqlError({commit, dispatch}, err) {
             // eslint-disable-next-line no-console
             console.error(err);
-            state.overlay = false;
+            dispatch('updateLoading', {source: 'bpc', value: false});
+            dispatch('updateLoading', {source: 'default_positions', value: false});
+            dispatch('updateLoading', {source: 'persons', value: false});
+            dispatch('updateLoading', {source: 'forecasts', value: false});
+            dispatch('updateLoading', {source: 'accounts', value: false});
             commit('openSnackbar', {
                 message: 'There was a database error.',
                 color: 'error',
@@ -124,18 +124,18 @@ export const store = new Vuex.Store({
                 }
             })
         },
-        loadBPC({commit, dispatch, state}) {
+        loadBPC({commit, dispatch}) {
             let table = 'bpc';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'bpc', value: true});
             knex.select().table(table)
                 .asCallback((err, rows) => {
                     if (err) return dispatch('sqlError', err);
                     commit('loadBPC', rows)
                 });
         },
-        loadPersons({commit, dispatch, state}) {
+        loadPersons({commit, dispatch}) {
             let table = 'person';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'persons', value: true});
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
                     return knex.schema.createTable(table, t => {
@@ -156,9 +156,9 @@ export const store = new Vuex.Store({
                     })
             })
         },
-        loadForecasts({commit, dispatch, state}) {
+        loadForecasts({commit, dispatch}) {
             let table = 'forecast';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'forecasts', value: true});
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
                     return knex.schema.createTable(table, t => {
@@ -178,9 +178,9 @@ export const store = new Vuex.Store({
                     })
             })
         },
-        loadMappedAccounts({commit, dispatch, state}) {
+        loadMappedAccounts({commit, dispatch}) {
             let table = 'account';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'accounts', value: true});
             knex.schema.hasTable(table).then(exists => {
                 if (!exists) {
                     return knex.schema.createTable(table, t => {
@@ -201,9 +201,9 @@ export const store = new Vuex.Store({
                     })
             })
         },
-        loadDefaultPositions({commit, dispatch, state}) {
+        loadDefaultPositions({commit, dispatch}) {
             let table = 'default_positions';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'default_positions', value: true});
             knex.select().table(table)
                 .asCallback((err, rows) => {
                     if (err) return dispatch('sqlError', err);
@@ -221,9 +221,9 @@ export const store = new Vuex.Store({
             });
             commit('updateSelected', selected)
         },
-        addPerson({commit, dispatch, state}, payload) {
+        addPerson({commit, dispatch}, payload) {
             let table = 'person';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'persons', value: true});
             knex(table).insert(payload)
                 .asCallback((err) => {
                     if (err) return dispatch('sqlError', err);
@@ -239,9 +239,9 @@ export const store = new Vuex.Store({
                         })
                 })
         },
-        deletePerson({dispatch, state}, payload) {
+        deletePerson({dispatch}, payload) {
             let table = 'person';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'persons', value: true});
             knex(table).where('id', payload).del()
                 .asCallback(err => {
                     if (err) return dispatch('sqlError', err);
@@ -253,9 +253,9 @@ export const store = new Vuex.Store({
                     dispatch('loadPersons')
                 })
         },
-        deleteForecast({dispatch, state}, payload) {
+        deleteForecast({dispatch}, payload) {
             let table = 'forecast';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'forecasts', value: true});
             knex(table)
                 .where('uid', payload.uid)
                 .andWhere('pid', payload.pid)
@@ -271,9 +271,9 @@ export const store = new Vuex.Store({
                     dispatch('loadForecasts')
                 })
         },
-        addForecast({commit, dispatch, state}, payload) {
+        addForecast({commit, dispatch}, payload) {
             let table = 'forecast';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'forecasts', value: true});
             knex(table).insert(payload)
                 .asCallback((err) => {
                     if (err) return dispatch('sqlError', err);
@@ -289,9 +289,9 @@ export const store = new Vuex.Store({
                         })
                 })
         },
-        addAccountMapping({commit, dispatch, state}, payload) {
+        addAccountMapping({commit, dispatch}, payload) {
             let table = 'account';
-            state.overlay = true;
+            dispatch('updateLoading', {source: 'accounts', value: true});
             knex(table)
                 .where('uid', payload[0].uid)
                 .andWhere('pid', payload[0].pid)

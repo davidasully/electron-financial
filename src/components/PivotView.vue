@@ -1,5 +1,5 @@
 <template>
-    <v-container class="my-5">
+    <v-container fluid class="mt-4">
         <v-layout
                 justify-center
                 align-center
