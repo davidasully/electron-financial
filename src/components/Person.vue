@@ -680,7 +680,10 @@
                     this.$store.dispatch('addForecast', forecast);
                     this.$refs.form.resetValidation();
                     this.forecastDialog = false;
-                    Object.assign(this.$data, initialState(true))
+                    Object.assign(this.$data, initialState(true));
+                    if (this.noAccounting) {
+                        this.openAccountDialog()
+                    }
                 }
             },
             deleteForecast(quarter) {
