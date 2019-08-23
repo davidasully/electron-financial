@@ -169,7 +169,7 @@
                     <Tabs class="mt-n7 ml-3"></Tabs>
 
                     <keep-alive :include="keepAlive">
-                        <router-view class="ml-3"></router-view>
+                        <router-view class="ml-3 px-2"></router-view>
                     </keep-alive>
 
                 </v-content>
@@ -327,31 +327,22 @@
         background: #424242;
         position: fixed;
     }
-
     #left {
         top: 0;
         bottom: 0;
         width: 12px;
-    }
-
-    #left {
         left: 0;
     }
-
     #bottom {
         left: 0;
         right: 0;
         height: 12px;
-    }
-
-    #bottom {
         bottom: 0;
+        z-index: +1;
     }
-
     .titlebar {
         -webkit-app-region: drag;
     }
-
     .titlebar-btns {
         -webkit-app-region: no-drag;
         -webkit-user-select: none;
