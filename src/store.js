@@ -490,13 +490,13 @@ export const store = new Vuex.Store({
                 )
                     .toArray()
             }
-            let ereRates = new DataFrame(state.data.default_positions)
+            let default_positions = new DataFrame(state.data.default_positions);
+            let ereRates = default_positions
                 .subset(['type', 'type_name', 'empl_class', 'ben_elig_flg', 'ere_rt'])
                 .distinct(row => row.empl_class + '-' + row.ben_elig_flg)
                 .generateSeries({
                     type_name: r => r.type_name.replace('Summary - ', '').replace('New-', '')
                 });
-
             return new DataFrame(bpc)
                 .joinOuterLeft(
                     ereRates,
@@ -513,7 +513,7 @@ export const store = new Vuex.Store({
                     }
                 )
                 .joinOuterLeft(
-                    ereRates,
+                    default_positions,
                     left => left.position_nbr,
                     right => right.type,
                     (left, right) => {
@@ -531,7 +531,7 @@ export const store = new Vuex.Store({
                 )
                 .generateSeries({
                     posid: r => r.skey,
-                    name: r => r.name || r.position_budget_type,
+                    name: r => r.name || r.type_name || r.position_budget_type,
                     jobcode_descr: r => r.jobcode_descr === 'NA' && !r.type ? r.type_name : r.jobcode_descr,
                     forecast: r => (r.q1 + r.q2 + r.q3 + r.q4) || 0,
                     dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * r.forecast,

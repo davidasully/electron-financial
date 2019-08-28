@@ -30,6 +30,16 @@
 
                     <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
+                            <v-btn v-on="on" icon x-large @click.prevent="manualRefresh(false)"
+                                   class="titlebar-btns">
+                                <v-icon>refresh</v-icon>
+                            </v-btn>
+                        </template>
+                        <span>Refresh user created data</span>
+                    </v-tooltip>
+
+                    <v-tooltip bottom>
+                        <template v-slot:activator="{ on }">
                             <v-btn v-on="on" icon x-large @click.prevent="togglePivotTab"
                                    class="titlebar-btns">
                                 <v-icon>table_chart</v-icon>
@@ -168,8 +178,8 @@
 
                     <Tabs class="mt-n7 ml-3"></Tabs>
 
-                    <keep-alive :include="keepAlive">
-                        <router-view class="ml-3 px-2"></router-view>
+                    <keep-alive max="5" :include="keepAlive">
+                        <router-view :key="$route.fullPath" class="ml-3 pa-2"></router-view>
                     </keep-alive>
 
                 </v-content>
@@ -251,7 +261,6 @@
                     payload['type'] = this.default_positions.filter(dp => {
                         return dp.type_name === payload.type
                     })[0].type;
-                    // payload['quarter'] = this.$store.state.set.quarter
                     this.$store.dispatch('addPerson', payload);
                     this.resetWindow();
                     this.$refs.form.resetValidation()
@@ -285,6 +294,15 @@
                     link.setAttribute("download", "export.csv");
                     link.click();
                 }
+            },
+            manualRefresh(all) {
+                if (all) {
+                    this.$store.dispatch('loadBPC');
+                    this.$store.dispatch('loadDefaultPositions');
+                }
+                this.$store.dispatch('loadPersons');
+                this.$store.dispatch('loadForecasts');
+                this.$store.dispatch('loadMappedAccounts');
             }
         },
         computed: {
@@ -302,6 +320,9 @@
                 if (showPivot) {
                     keep.unshift('PivotView')
                 }
+                if (this.$store.state.selected.length > 0) {
+                    keep.unshift('Person')
+                }
                 return keep
             },
             overlay() {
@@ -311,11 +332,7 @@
         },
         created() {
             this.$vuetify.theme.dark = true;
-            this.$store.dispatch('loadBPC');
-            this.$store.dispatch('loadPersons');
-            this.$store.dispatch('loadForecasts');
-            this.$store.dispatch('loadMappedAccounts');
-            this.$store.dispatch('loadDefaultPositions');
+            this.manualRefresh(true)
         },
         mounted() {
             this.$router.push('/')

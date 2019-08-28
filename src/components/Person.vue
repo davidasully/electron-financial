@@ -75,7 +75,7 @@
                     <v-flex class="mt-2">
 
                         <!--Begin account mapping form-->
-                        <v-btn @click.stop="openAccountDialog" depressed color="primary">Accounts</v-btn>
+                        <v-btn @click.stop="openAccountDialog" depressed :color="`${(noAccounting | noMapping) & forecastResult.length > 0 ? 'error' : 'primary'}`">Accounts</v-btn>
 
                         <v-dialog v-model="forecastDialog" persistent max-width="600px">
                             <template v-slot:activator="{ on }">
@@ -681,7 +681,7 @@
                     this.$refs.form.resetValidation();
                     this.forecastDialog = false;
                     Object.assign(this.$data, initialState(true));
-                    if (this.noAccounting) {
+                    if (this.noMapping) {
                         this.openAccountDialog()
                     }
                 }
@@ -703,10 +703,6 @@
                     return item.position_nbr === pid & item.emplid === uid
                 })
                     .sort((a, b) => (a.total_committed_personal_services > b.total_committed_personal_services) ? 1 : -1)
-                    .map(i => {
-                        i['fct_dist_pct'] = i['fct_dist_pct'] || 0;
-                        return i
-                    })
             },
             forecastResult() {
                 return this.$store.getters.forecasts.filter(item => {
@@ -775,6 +771,11 @@
             },
             noAccounting() {
                 return this.person.length <= 1 & !this.sPerson.cost_center_reference_id
+            },
+            noMapping() {
+                return this.$store.state.data.accounts.filter(i => {
+                    return i.uid === this.sPerson.emplid && i.pid === this.sPerson.position_nbr
+                }).length === 0
             }
         }
     }
