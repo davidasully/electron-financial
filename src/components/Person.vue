@@ -75,7 +75,10 @@
                     <v-flex class="mt-2">
 
                         <!--Begin account mapping form-->
-                        <v-btn @click.stop="openAccountDialog" depressed :color="`${(noAccounting | noMapping) & forecastResult.length > 0 ? 'error' : 'primary'}`">Accounts</v-btn>
+                        <v-btn @click.stop="openAccountDialog" depressed
+                               :color="`${(noAccounting | noMapping) & forecastResult.length > 0 ? 'error' : 'primary'}`">
+                            Accounts
+                        </v-btn>
 
                         <v-dialog v-model="forecastDialog" persistent max-width="600px">
                             <template v-slot:activator="{ on }">
@@ -122,10 +125,16 @@
                                                                         <span>{{ Math.round(totalStats.totalCommited).toLocaleString() }}</span>
                                                                     </v-flex>
                                                                     <v-flex xs3>
-                                                                        <div class="caption grey--text">Current
+                                                                        <div class="caption grey--text">Salary
                                                                             Forecast
                                                                         </div>
                                                                         <span>{{ currentForecastTotal.toLocaleString() }}</span>
+                                                                    </v-flex>
+                                                                    <v-flex xs3>
+                                                                        <div class="caption grey--text">Current
+                                                                            Forecast
+                                                                        </div>
+                                                                        <span>{{ totalStats.totalEffForecast.toLocaleString() }}</span>
                                                                     </v-flex>
                                                                 </v-layout>
                                                             </v-card>
@@ -166,7 +175,7 @@
                                                         </v-expand-transition>
                                                     </v-layout>
                                                 </v-flex>
-                                                <v-flex xs7>
+                                                <v-flex xs4>
                                                     <v-select
                                                             :items="['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4']"
                                                             :rules="[v => !!v || 'Quarter selection required']"
@@ -176,6 +185,36 @@
                                                     ></v-select>
                                                 </v-flex>
                                                 <v-flex xs5>
+                                                    <v-menu
+                                                            ref="menu"
+                                                            v-model="dateMenu"
+                                                            :close-on-content-click="false"
+                                                            :return-value.sync="forecast.effdt"
+                                                            transition="scale-transition"
+                                                            offset-y
+                                                            full-width
+                                                            min-width="290px"
+                                                    >
+                                                        <template v-slot:activator="{ on }">
+                                                            <v-text-field
+                                                                    v-model="forecast.effdt"
+                                                                    label="Effective Date"
+                                                                    prepend-icon="event"
+                                                                    readonly
+                                                                    v-on="on"
+                                                            ></v-text-field>
+                                                        </template>
+                                                        <v-date-picker v-model="forecast.effdt" no-title scrollable>
+                                                            <div class="flex-grow-1"></div>
+                                                            <v-btn text color="primary" @click="dateMenu = false">Cancel
+                                                            </v-btn>
+                                                            <v-btn text color="primary" @click="$refs.menu.save(forecast.effdt)">
+                                                                OK
+                                                            </v-btn>
+                                                        </v-date-picker>
+                                                    </v-menu>
+                                                </v-flex>
+                                                <v-flex xs3>
                                                     <v-text-field
                                                             label="Amount*"
                                                             :rules="[v => !!v || 'Forecast amount required']"
@@ -226,11 +265,10 @@
 
                                             <v-dialog
                                                     v-model="showEdit"
-                                                    max-width="115px"
-                                                    max-height="50"
+                                                    max-width="125px"
                                                     hide-overlay
                                             >
-                                                <v-card flat max-width="115">
+                                                <v-card flat max-width="125" class="py-2">
                                                     <v-container>
                                                         <v-layout align-space-around justify-space-around row wrap
                                                                   fill-height class="mx-3">
@@ -245,7 +283,7 @@
                                                             </v-flex>
                                                             <v-flex xs12>
                                                                 <v-btn
-                                                                        class="px-1"
+                                                                        class="pl-2"
                                                                         depressed
                                                                         color="primary"
                                                                         @click.stop="saveSelectedEdit"
@@ -261,15 +299,14 @@
 
                                             <v-dialog
                                                     v-model="showAddAccount"
-                                                    max-width="500px"
-                                                    max-height="50"
+                                                    max-width="500"
                                                     hide-overlay
                                                     persistent
                                             >
-                                                <v-card flat max-width="500">
+                                                <v-card flat max-width="500" class="py-2">
                                                     <v-form ref="form2">
                                                         <v-container>
-                                                            <v-layout align-space-around justify-space-around row
+                                                            <v-layout align-space-around justify-space-around row wrap
                                                                       fill-height class="mx-3">
                                                                 <v-flex xs6 class="mb-n3">
                                                                     <v-combobox
@@ -319,7 +356,7 @@
                                             <v-card flat v-for="(p, i) in accounts" :key="p.lkey"
                                                     class="accent mb-2">
                                                 <v-layout row wrap class="pa-1">
-                                                    <v-flex xs6 md4>
+                                                    <v-flex xs6 md2>
                                                         <div class="caption grey--text">Cost Center</div>
                                                         <v-tooltip bottom>
                                                             <template v-slot:activator="{ on }">
@@ -339,13 +376,21 @@
                                                     </v-flex>
                                                     <v-flex xs6 md3>
                                                         <div class="text-center">
+                                                            <div class="caption grey--text">Manual Adjustment*</div>
+                                                            <span @click="openSelectedEdit(i, p.man_adj_amt, 'adj')">
+                                                                {{(p.man_adj_amt || 0).toLocaleString()}}
+                                                            </span>
+                                                        </div>
+                                                    </v-flex>
+                                                    <v-flex xs6 md2>
+                                                        <div class="text-center">
                                                             <div class="caption grey--text">Dist %*</div>
-                                                            <span @click="openSelectedEdit(i, p.fct_dist_pct)">{{ p.fct_dist_pct || 0 }}</span>
+                                                            <span @click="openSelectedEdit(i, p.fct_dist_pct, 'dist')">{{ p.fct_dist_pct || 0 }}</span>
                                                         </div>
                                                     </v-flex>
                                                     <v-flex xs6 md2>
                                                         <div class="caption grey--text">Forecast Dist</div>
-                                                        <span>{{ (p.dist_forecast || 0).toLocaleString() }}</span>
+                                                        <span>{{(Math.round(p.total_dist_forecast) || 0).toLocaleString()}}</span>
                                                     </v-flex>
                                                 </v-layout>
                                             </v-card>
@@ -422,7 +467,7 @@
                                 <v-layout v-if="forecastResult.length > 0">
                                     <v-flex xs5 class="text-center">
                                         <div class="caption grey--text">Forecast Mapped</div>
-                                        <div class="title">{{(Math.round(p.fct_dist_pct) || 0) + '%'}}</div>
+                                        <div class="title">{{(p.fct_dist_pct || 0) + '%'}}</div>
                                     </v-flex>
                                     <v-flex xs2></v-flex>
                                     <v-flex xs5 class="text-center">
@@ -556,16 +601,19 @@
             showForecastDetail: false,
             confirmDeletePersonDialog: false,
             accountMappingDialog: false,
+            dateMenu: false,
             dataTableDialog: false,
             forecastDialog: false,
             showEdit: false,
             showAddAccount: false,
             selectedEdit: '',
+            selectedEditType: '',
             selectedEditValue: '',
             newCostCenter: '',
             newWd2Cd: '',
             forecast: {
                 quarter: '',
+                effdt: new Date('2019-07-01').toISOString().substr(0, 10),
                 amt: 0,
                 note: ''
             },
@@ -590,7 +638,8 @@
                 this.accounts = this.person;
                 this.accountMappingDialog = true;
             },
-            openSelectedEdit(index, value) {
+            openSelectedEdit(index, value, type) {
+                this.selectedEditType = type;
                 this.selectedEditValue = value;
                 this.selectedEdit = index;
                 this.showEdit = true
@@ -601,7 +650,12 @@
             saveSelectedEdit() {
                 let accounts = this.accounts;
                 let editedObject = accounts[this.selectedEdit];
-                editedObject.fct_dist_pct = this.selectedEditValue;
+                if (this.selectedEditType === 'dist') {
+                    editedObject.fct_dist_pct = this.selectedEditValue;
+                }
+                if (this.selectedEditType === 'adj') {
+                    editedObject.man_adj_amt = this.selectedEditValue;
+                }
                 accounts.splice(this.selectedEdit, 1, editedObject);
                 this.accounts = accounts;
                 this.showEdit = false
@@ -640,7 +694,8 @@
                             cost_center_reference_id: i.cost_center_reference_id,
                             wd2_cd: i.wd2_cd,
                             total_original_budget: this.totalStats.totalOrigBudgeted,
-                            fct_dist_pct: i.fct_dist_pct
+                            fct_dist_pct: i.fct_dist_pct,
+                            man_adj_amt: i.man_adj_amt || 0
                         }
                     });
                     this.$store.dispatch('addAccountMapping', mapping);
@@ -697,10 +752,10 @@
         computed: {
             person() {
                 let posid = this.posid.split('-');
-                let uid = posid[0];
+                let uid = parseInt(posid[0]);
                 let pid = posid[1];
                 return this.$store.getters.combinedBPC.filter(item => {
-                    return item.position_nbr === pid & item.emplid === uid
+                    return item.position_nbr === pid & parseInt(item.emplid) === uid
                 })
                     .sort((a, b) => (a.total_committed_personal_services > b.total_committed_personal_services) ? 1 : -1)
             },
@@ -758,16 +813,15 @@
                 return {
                     totalCommited: this.person.map(item => parseFloat(item.total_committed_personal_services) || 0).reduce((t, v) => t + v),
                     totalOrigBudgeted: this.person.map(item => parseFloat(item.original_budget_personal_services) || 0).reduce((t, v) => t + v),
-                    totalCurrBudgeted: this.person.map(item => parseFloat(item.current_budget_personal_services) || 0).reduce((t, v) => t + v)
+                    totalCurrBudgeted: this.person.map(item => parseFloat(item.current_budget_personal_services) || 0).reduce((t, v) => t + v),
+                    totalEffForecast: this.person.map(item => parseFloat(item.current_forecast) || 0).reduce((t, v) => t + v)
                 }
             },
             genericName() {
                 return ['No Employee', 'Employee Group'].includes(this.sPerson.name)
             },
             userCreated() {
-                let personIds = this.$store.state.data.persons.map(item => item.id);
-                let uid = this.sPerson.emplid;
-                return personIds.includes(uid)
+                return !!this.sPerson.newid
             },
             noAccounting() {
                 return this.person.length <= 1 & !this.sPerson.cost_center_reference_id

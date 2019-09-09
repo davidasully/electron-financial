@@ -33,6 +33,7 @@ const matchKeys = (array1, array2) => {
 export const store = new Vuex.Store({
     state: {
         search: '',
+        searchActive: true,
         selected: [],
         pivotTab: false,
         snackbar: {
@@ -167,6 +168,7 @@ export const store = new Vuex.Store({
                         t.string('pid', 10);
                         t.string('quarter', 2);
                         t.integer('amt');
+                        t.string('effdt', 10);
                         t.string('note');
                         t.timestamp('created_at').defaultTo(knex.fn.now());
                     })
@@ -191,6 +193,7 @@ export const store = new Vuex.Store({
                         t.string('wd2_cd', 10);
                         t.integer('total_original_budget');
                         t.decimal('fct_dist_pct');
+                        t.integer('man_adj_amt');
                         t.timestamp('created_at').defaultTo(knex.fn.now());
                     })
                 }
@@ -331,19 +334,27 @@ export const store = new Vuex.Store({
         forecasts(state) {
             let forecast = state.data.forecasts.map(i => {
                 i['skey'] = i.uid + '-' + i.pid;
-                i['note'] = i.note ? i.quarter.toUpperCase() + ': ' + i.note + ' ' : '';
+                i['note'] = i.note ? i.quarter.toUpperCase() + ': ' + i.note + ' (eff ' + i.effdt + ') ' : '';
                 i['q1'] = i.quarter === 'q1' ? i.amt : 0;
+                i['q1_effdt'] = i.quarter === 'q1' ? i.effdt : '';
                 i['q2'] = i.quarter === 'q2' ? i.amt : 0;
+                i['q2_effdt'] = i.quarter === 'q2' ? i.effdt : '';
                 i['q3'] = i.quarter === 'q3' ? i.amt : 0;
+                i['q3_effdt'] = i.quarter === 'q3' ? i.effdt : '';
                 i['q4'] = i.quarter === 'q4' ? i.amt : 0;
+                i['q4_effdt'] = i.quarter === 'q4' ? i.effdt : '';
                 return i
             });
             return new DataFrame(forecast)
                 .pivot('skey', {
                     q1: Series.sum,
+                    q1_effdt: Series.sum,
                     q2: Series.sum,
+                    q2_effdt: Series.sum,
                     q3: Series.sum,
+                    q3_effdt: Series.sum,
                     q4: Series.sum,
+                    q4_effdt: Series.sum,
                     note: Series.sum
                 })
                 .toArray()
@@ -376,8 +387,8 @@ export const store = new Vuex.Store({
 
                         (left, right) => {
                             return {
-                                skey: (left.uid || left.id) + (left.pid || left.type),
-                                pid: left.id,
+                                skey: (left.uid || left.id) + '-' + (left.pid || left.type),
+                                newid: left.id,
                                 type: left.type,
                                 jobcode_descr: right.type_name,
                                 emplid: left.uid || left.id,
@@ -391,7 +402,6 @@ export const store = new Vuex.Store({
                         }
                     )
                     .toArray();
-
                 let mper = matchKeys(persons, bpc);
                 let mbpc = matchKeys(bpc, persons);
                 bpc = [...mper, ...mbpc];
@@ -411,7 +421,7 @@ export const store = new Vuex.Store({
                     let bpcDF = new DataFrame(bpc);
                     let accts = new DataFrame(newAccounts);
                     let ccDescr = new DataFrame(getters.ccDescr);
-                    let wd2Descr = new DataFrame(getters.wd2Descr)
+                    let wd2Descr = new DataFrame(getters.wd2Descr);
                     let newRows = bpcDF.distinct(row => row.skey)
                         .subset(columns)
                         .join(
@@ -467,6 +477,7 @@ export const store = new Vuex.Store({
                         let newLeft = Object.assign({}, left);
                         let newRight = Object.assign({}, right);
                         newLeft['fct_dist_pct'] = newRight.fct_dist_pct;
+                        newLeft['man_adj_amt'] = newRight.man_adj_amt;
                         newLeft['total_original_budget'] = newRight.total_original_budget;
                         return newLeft
                     }
@@ -477,14 +488,14 @@ export const store = new Vuex.Store({
             if (state.data.forecasts.length > 0) {
                 let bpcDF = new DataFrame(bpc);
                 let forecastDF = new DataFrame(getters.forecasts);
-
                 bpc = bpcDF.joinOuterLeft(
                     forecastDF,
                     left => left.skey,
                     right => right.skey,
                     (left, right) => {
                         let newLeft = Object.assign({}, left);
-                        let newRight = (({q1, q2, q3, q4}) => ({q1, q2, q3, q4}))(Object.assign({}, right));
+                        let newRight = (({q1, q1_effdt, q2, q2_effdt, q3, q3_effdt, q4, q4_effdt}) => ({
+                            q1, q1_effdt, q2, q2_effdt, q3, q3_effdt, q4, q4_effdt}))(Object.assign({}, right));
                         return {...newLeft, ...newRight}
                     }
                 )
@@ -505,10 +516,7 @@ export const store = new Vuex.Store({
                     (left, right) => {
                         let newLeft = Object.assign({}, left);
                         let newRight = (({type, type_name, ere_rt}) => ({
-                            type,
-                            type_name,
-                            ere_rt
-                        }))(Object.assign({}, right));
+                            type, type_name, ere_rt}))(Object.assign({}, right));
                         return {...newLeft, ...newRight}
                     }
                 )
@@ -533,11 +541,21 @@ export const store = new Vuex.Store({
                     posid: r => r.skey,
                     name: r => r.name || r.type_name || r.position_budget_type,
                     jobcode_descr: r => r.jobcode_descr === 'NA' && !r.type ? r.type_name : r.jobcode_descr,
-                    forecast: r => (r.q1 + r.q2 + r.q3 + r.q4) || 0,
-                    dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * r.forecast,
-                    total_dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * (r.forecast + (r.total_original_budget || 0)),
+                    eff_forecast: r => {
+                        const fyEnd = new Date('2020-06-30');
+                        const toDays = (x) => Math.round(((x / (1000 * 3600 * 24)) / 365) * 100) / 100;
+                        let q1m = r.q1 ? toDays((fyEnd.getTime() - new Date(r.q1_effdt).getTime())) : 0;
+                        let q2m = r.q2 ? toDays((fyEnd.getTime() - new Date(r.q2_effdt).getTime())) : 0;
+                        let q3m = r.q3 ? toDays((fyEnd.getTime() - new Date(r.q3_effdt).getTime())) : 0;
+                        let q4m = r.q4 ? toDays((fyEnd.getTime() - new Date(r.q4_effdt).getTime())) : 0;
+                        return (r.q1 * q1m + r.q2 * q2m + r.q3 * q3m + r.q4 * q4m) || 0
+                    },
+                    sal_forecast: r => (r.q1 + r.q2 + r.q3 + r.q4) || 0,
+                    total_dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * ((r.eff_forecast || 0) + (r.total_original_budget || 0)) + (r.man_adj_amt || 0),
                     current_forecast: r => r.total_dist_forecast || (r.original_budget_personal_services || 0),
-                    dist_forecast_ere: r => r.current_forecast * (r.ere_rt || 0)
+                    current_forecast_ere: r => r.current_forecast * (r.ere_rt || 0),
+                    current_forecast_rm: r => r.current_forecast * 0.0125,
+                    current_forecast_tech: r => r.current_forecast * 0.0160
                 })
                 .orderBy(row => row.name)
                 .toArray()

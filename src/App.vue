@@ -30,7 +30,9 @@
 
                     <v-tooltip bottom>
                         <template v-slot:activator="{ on }">
-                            <v-btn v-on="on" icon x-large @click.prevent="manualRefresh(false)"
+                            <v-btn v-on="on" icon x-large
+                                   @click.stop="softRefresh(false)"
+                                   @dblclick.native="hardRefresh"
                                    class="titlebar-btns">
                                 <v-icon>refresh</v-icon>
                             </v-btn>
@@ -140,7 +142,7 @@
                                 <v-card-actions>
                                     <v-spacer></v-spacer>
                                     <v-btn color="error" text @click="closeDialog">Close</v-btn>
-                                    <v-btn color="primary" @click="submitNew(position)">Submit</v-btn>
+                                    <v-btn color="primary" @click="submitNew">Submit</v-btn>
                                 </v-card-actions>
                             </v-card>
                         </v-form>
@@ -148,6 +150,7 @@
                     <!--END ADD NEW FORM -->
 
                     <v-text-field
+                            :disabled="searchStatus"
                             solo-inverted
                             flat
                             hide-details
@@ -191,6 +194,7 @@
 <script>
     import Tabs from '@/components/Tabs'
     import {remote} from 'electron'
+    import {DataFrame, Series} from 'data-forge';
 
     const initialState = () => {
         return {
@@ -253,14 +257,29 @@
             navigateHome() {
                 this.$router.push('/')
             },
+            hardRefresh() {
+                this.$router.push('/reload')
+            },
             togglePivotTab() {
                 this.$store.dispatch('togglePivotTab')
             },
-            submitNew(payload) {
+            submitNew() {
                 if (this.$refs.form.validate()) {
+                    let payload = Object.assign({}, this.position);
+                    payload['deptid'] = payload['deptid'].toUpperCase();
                     payload['type'] = this.default_positions.filter(dp => {
                         return dp.type_name === payload.type
                     })[0].type;
+                    let exists = this.$store.getters.combinedBPC.filter(item => {
+                        return item.position_nbr == (payload.pid || payload.type) & item.emplid == payload.uid
+                    }).length > 0;
+                    if (exists) {
+                        return this.$store.dispatch('openSnackbar', {
+                            message: `Duplicate position: ${payload.uid}-${payload.pid || payload.type}.`,
+                            color: 'error',
+                            timeout: 2000
+                        })
+                    }
                     this.$store.dispatch('addPerson', payload);
                     this.resetWindow();
                     this.$refs.form.resetValidation()
@@ -268,7 +287,9 @@
             },
             exportCSV() {
                 let csvContent = "data:text/csv;charset=utf-8,";
-                let arrData = this.$store.getters.combinedBPC;
+                let arrData = new DataFrame(this.$store.getters.combinedBPC)
+                    .dropSeries(['as_of_dt', 'skey', 'lkey', 'newid', 'posid', 'eff_forecast'])
+                    .toArray();
                 if (arrData.length > 0) {
                     let keys = Object.keys(arrData[arrData.length - 1]);
                     csvContent += [
@@ -295,7 +316,7 @@
                     link.click();
                 }
             },
-            manualRefresh(all) {
+            softRefresh(all) {
                 if (all) {
                     this.$store.dispatch('loadBPC');
                     this.$store.dispatch('loadDefaultPositions');
@@ -306,6 +327,9 @@
             }
         },
         computed: {
+            searchStatus() {
+                return !this.$store.state.searchActive
+            },
             default_positions() {
                 return this.$store.state.data.default_positions
                     .filter(item => item.group === this.positionType)
@@ -332,7 +356,7 @@
         },
         created() {
             this.$vuetify.theme.dark = true;
-            this.manualRefresh(true)
+            this.softRefresh(true)
         },
         mounted() {
             this.$router.push('/')
@@ -344,12 +368,14 @@
         background: #424242;
         position: fixed;
     }
+
     #left {
         top: 0;
         bottom: 0;
         width: 12px;
         left: 0;
     }
+
     #bottom {
         left: 0;
         right: 0;
@@ -357,9 +383,11 @@
         bottom: 0;
         z-index: +1;
     }
+
     .titlebar {
         -webkit-app-region: drag;
     }
+
     .titlebar-btns {
         -webkit-app-region: no-drag;
         -webkit-user-select: none;
