@@ -712,7 +712,7 @@
                 if (this.$refs.form.validate()) {
                     let forecast = this.forecast;
 
-                    let amt = parseInt(forecast.amt) - this.currentForecastTotal;
+                    let amt = parseFloat(forecast.amt) - this.currentForecastTotal;
                     if (amt === 0) {
                         return this.$store.dispatch('openSnackbar', {
                             message: 'Invalid forecast amount.',
@@ -772,7 +772,7 @@
                     amts = ['q1', 'q2', 'q3', 'q4'].map(key => forecast[0][key]);
                     note = forecast[0].note
                 }
-                let origBudget = parseInt(this.totalStats.totalOrigBudgeted);
+                let origBudget = parseFloat(this.totalStats.totalOrigBudgeted);
                 return {
                     amts: [origBudget, ...amts],
                     note: note
@@ -807,7 +807,7 @@
             },
             totalPercent() {
                 let acct = this.accounts;
-                return acct.length > 0 ? acct.map(item => parseInt(item.fct_dist_pct)).reduce((t, v) => t + v) : 0
+                return acct.length > 0 ? acct.map(item => parseFloat(item.fct_dist_pct)).reduce((t, v) => t + v) : 0
             },
             totalStats() {
                 return {
