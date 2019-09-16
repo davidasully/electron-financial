@@ -194,7 +194,7 @@
 <script>
     import Tabs from '@/components/Tabs'
     import {remote} from 'electron'
-    import {DataFrame, Series} from 'data-forge';
+    import {DataFrame} from 'data-forge';
 
     const initialState = () => {
         return {
@@ -288,7 +288,7 @@
             exportCSV() {
                 let csvContent = "data:text/csv;charset=utf-8,";
                 let arrData = new DataFrame(this.$store.getters.combinedBPC)
-                    .dropSeries(['as_of_dt', 'skey', 'lkey', 'newid', 'posid', 'eff_forecast'])
+                    .dropSeries(['as_of_dt', 'skey', 'lkey', 'newid', 'posid', 'eff_forecast', 'created_at'])
                     .toArray();
                 if (arrData.length > 0) {
                     let keys = Object.keys(arrData[arrData.length - 1]);

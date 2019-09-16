@@ -331,6 +331,13 @@ export const store = new Vuex.Store({
                 .distinct(row => row.wd2_cd)
                 .toArray()
         },
+        accounts(state) {
+            return state.data.accounts.map(i => {
+                i['lkey'] = i.uid + '-' + i.pid + '-' + i.cost_center_reference_id + '-' + i.wd2_cd;
+                i['skey'] = i.uid + '-' + i.pid;
+                return i
+            })
+        },
         forecasts(state) {
             let forecast = state.data.forecasts.map(i => {
                 i['skey'] = i.uid + '-' + i.pid;
@@ -400,19 +407,54 @@ export const store = new Vuex.Store({
                                 fte: left.fte
                             }
                         }
-                    )
-                    .toArray();
+                    );
+
+                if (state.data.accounts.length > 0) {
+                    let ccDescr = new DataFrame(getters.ccDescr);
+                    let wd2Descr = new DataFrame(getters.wd2Descr);
+                    persons = new DataFrame(getters.accounts)
+                        .joinOuterRight(
+                            persons,
+                            left => left.skey,
+                            right => right.skey,
+                            (left, right) => {
+                                let newRight = Object.assign({}, right);
+                                newRight = Object.assign(newRight, Object.assign({}, left));
+                                return newRight
+                            }
+                        )
+                        .joinOuterLeft(
+                            ccDescr,
+                            left => left.cost_center_reference_id,
+                            right => right.cost_center_reference_id,
+                            (left, right) => {
+                                let newLeft = Object.assign({}, left);
+                                newLeft['cost_center_name'] = Object.assign({}, right).cost_center_name;
+                                return newLeft
+                            }
+                        )
+                        .joinOuterLeft(
+                            wd2Descr,
+                            left => left.wd2_cd,
+                            right => right.wd2_cd,
+                            (left, right) => {
+                                let newLeft = Object.assign({}, left);
+                                let newRight = Object.assign({}, right);
+                                newLeft['wd2_name'] = newRight.wd2_name;
+                                newLeft['account_type'] = newRight.account_type;
+                                newLeft['account_type_detail'] = newRight.account_type_detail;
+                                return newLeft
+                            }
+                        )
+                }
+                persons = persons.toArray();
                 let mper = matchKeys(persons, bpc);
                 let mbpc = matchKeys(bpc, persons);
                 bpc = [...mper, ...mbpc];
             }
 
             if (state.data.accounts.length > 0) {
-                let accounts = state.data.accounts.map(i => {
-                    i['lkey'] = i.uid + '-' + i.pid + '-' + i.cost_center_reference_id + '-' + i.wd2_cd;
-                    i['skey'] = i.uid + '-' + i.pid;
-                    return i
-                });
+                let accounts = getters.accounts;
                 let newAccounts = accounts.filter(i => !bpc.map(r => r.lkey).includes(i.lkey));
                 if (newAccounts.length > 0) {
                     let columns = ['name', "emplid", "position_nbr", "jobcode_descr", "ten_status", "deptid", "dept_descr",
@@ -495,7 +537,8 @@ export const store = new Vuex.Store({
                     (left, right) => {
                         let newLeft = Object.assign({}, left);
                         let newRight = (({q1, q1_effdt, q2, q2_effdt, q3, q3_effdt, q4, q4_effdt}) => ({
-                            q1, q1_effdt, q2, q2_effdt, q3, q3_effdt, q4, q4_effdt}))(Object.assign({}, right));
+                            q1, q1_effdt, q2, q2_effdt, q3, q3_effdt, q4, q4_effdt
+                        }))(Object.assign({}, right));
                         return {...newLeft, ...newRight}
                     }
                 )
@@ -516,7 +559,8 @@ export const store = new Vuex.Store({
                     (left, right) => {
                         let newLeft = Object.assign({}, left);
                         let newRight = (({type, type_name, ere_rt}) => ({
-                            type, type_name, ere_rt}))(Object.assign({}, right));
+                            type, type_name, ere_rt
+                        }))(Object.assign({}, right));
                         return {...newLeft, ...newRight}
                     }
                 )
@@ -551,8 +595,9 @@ export const store = new Vuex.Store({
                         return (r.q1 * q1m + r.q2 * q2m + r.q3 * q3m + r.q4 * q4m) || 0
                     },
                     sal_forecast: r => (r.q1 + r.q2 + r.q3 + r.q4) || 0,
+                    forecast_entered: r => (r.q1 !== 0) | (r.q2 !== 0) | (r.q3 !== 0) | (r.q4 !== 0),
                     total_dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * ((r.eff_forecast || 0) + (r.total_original_budget || 0)) + (r.man_adj_amt || 0),
-                    current_forecast: r => r.total_dist_forecast || (r.original_budget_personal_services || 0),
+                    current_forecast: r => r.forecast_entered ? r.total_dist_forecast : (r.original_budget_personal_services || 0),
                     current_forecast_ere: r => r.current_forecast * (r.ere_rt || 0),
                     current_forecast_rm: r => r.current_forecast * 0.0125,
                     current_forecast_tech: r => r.current_forecast * 0.0160

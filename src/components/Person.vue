@@ -635,7 +635,7 @@
                 this.$router.push('/')
             },
             openAccountDialog() {
-                this.accounts = this.person;
+                this.accounts = this.person.filter(i => !!i.cost_center_reference_id);
                 this.accountMappingDialog = true;
             },
             openSelectedEdit(index, value, type) {
@@ -824,12 +824,13 @@
                 return !!this.sPerson.newid
             },
             noAccounting() {
-                return this.person.length <= 1 & !this.sPerson.cost_center_reference_id
+                return this.person.filter(i => !!i.cost_center_reference_id).length === 0
             },
             noMapping() {
-                return this.$store.state.data.accounts.filter(i => {
-                    return i.uid === this.sPerson.emplid && i.pid === this.sPerson.position_nbr
-                }).length === 0
+                let match = this.$store.getters.accounts.filter(i => {
+                    return i.skey === this.sPerson.skey
+                });
+                return match.length === 0
             }
         }
     }
