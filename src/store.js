@@ -595,7 +595,7 @@ export const store = new Vuex.Store({
                         return (r.q1 * q1m + r.q2 * q2m + r.q3 * q3m + r.q4 * q4m) || 0
                     },
                     sal_forecast: r => (r.q1 + r.q2 + r.q3 + r.q4) || 0,
-                    forecast_entered: r => (r.q1 !== 0) | (r.q2 !== 0) | (r.q3 !== 0) | (r.q4 !== 0),
+                    forecast_entered: r => (r.q1 || 0 !== 0) | (r.q2 || 0 !== 0) | (r.q3 || 0 !== 0) | (r.q4 || 0 !== 0),
                     total_dist_forecast: r => ((r.fct_dist_pct || 0) / 100) * ((r.eff_forecast || 0) + (r.total_original_budget || 0)) + (r.man_adj_amt || 0),
                     current_forecast: r => r.forecast_entered ? r.total_dist_forecast : (r.original_budget_personal_services || 0),
                     current_forecast_ere: r => r.current_forecast * (r.ere_rt || 0),
